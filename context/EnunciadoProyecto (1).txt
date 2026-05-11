@@ -1,0 +1,156 @@
+                                                                      Sistemas Ciberfísicos
+                                                                               Curso 25/26
+
+
+
+       Proyecto de diseño, implementación y validación de un sistema
+                                ciberfísico
+Se desea diseñar e implementar un sistema ciberfísico capaz de jugar una partida de 3 en
+raya de forma autónoma contra un jugador humano. Para ello, se cuenta con un robot
+antropomórfico (Ned-2) equipado con un sistema de visión que se encargará del
+movimiento de piezas sobre el tablero. El robot se comunicará con un sistema central
+encargado de gestionar y supervisar el desarrollo de la partida.
+
+
+
+
+Para el diseño del sistema, se especifica el siguiente funcionamiento general.
+Robot manipulador
+El robot manipulador es el encargado de posicionar una pieza en el tablero en cada turno
+del juego. Para ello, debe recoger una pieza (bien de la zona de reserva de piezas, o bien
+una de las piezas ya ubicadas en el tablero) y trasladarla a su nueva posición en el tablero.
+Al comenzar la partida, habrá 3 piezas apiladas verticalmente ubicadas en la zona de
+reserva de piezas.
+El sistema contará con dos modos de operación:
+   -    Juego manual (humano vs. humano). En este modo, un humano manejará el robot
+        desde el PC central (remoto). El humano decidirá el movimiento a realizar. El
+        robot recibirá la orden sobre qué pieza retirar y en qué posición del tablero
+        ubicarla.
+   -    Juego automático (robot vs. humano). En este modo, será el propio robot quien
+        decida sus movimientos. Una vez se indique desde el PC central, se dará comienzo
+        la partida contra el humano.
+Por cuestiones de seguridad, el robot manipulador deberá permanecer en posición de
+“home” hasta que reciba una orden de comienzo de partida (mediante un botón de START
+en el PC central). Asimismo, para evitar situaciones de peligro y daños en el entorno, el
+robot deberá desacoplar el movimiento ascendente/descendente (Z) de los movimientos
+                                                                    Sistemas Ciberfísicos
+                                                                             Curso 25/26
+
+
+
+X-Y. Esto implica que, inicialmente, el efector final deberá ubicarse sobre la pieza a
+retirar (posición de aproximación retirada). Una vez en esta posición, descenderá
+verticalmente para retirar la pieza correspondiente. Cuando haya cogido la pieza, deberá
+volver a la posición de aproximación anterior y, desde ahí, desplazarse en el mismo plano
+horizontal para ubicarse sobre la posición de colocación (posición de aproximación de
+colocación). En ese momento, deberá descender para dejar la pieza y volver a su posición
+de aproximación anterior. El robot volverá a una posición de espera hasta su siguiente
+turno. Todos los movimientos a realizar por el Ned-2 deben ser suaves, evitando altas
+velocidades por motivos de seguridad.
+Para asegurar una dinámica del juego, se debe asegurar que:
+   -   El proceso completo para coger una pieza no deberá durar más de 15 segundos.
+   -   El proceso para transportar una pieza hacia su nueva posición no debe durar más
+       de 15 segundos.
+   -   En el modo automático, la toma de decisión del robot para la ubicación de su pieza
+       no debe tomar más de 10 segundos.
+El robot sólo podrá iniciar un movimiento (tanto en manual como en automático) cuando
+el contrincante humano haya terminado su turno. Para ello, se debe implementar algún
+tipo de sistema que detecte esta situación.
+Para mejorar la experiencia del jugador contrincante y hacerla más realista, el robot
+deberá emitir mensajes de audio que describa la evolución de la partida, y que pueda
+incluir alguna apreciación (por ejemplo, celebración de victoria, anuncia de derrota,
+anuncio de empate, …).
+El robot cuenta con un sistema de visión que captará la información de la evolución de la
+partida. Una vez el contrincante humano finalice su movimiento deberá consultar el
+estado del tablero antes de ejecutar su turno. Esta información siempre deberá enviarse al
+PC central.
+PC central
+El PC central será el cerebro del sistema ciberfísico. Para ello, implementará un sistema
+de control supervisado que funcionará en tiempo real mediante una máquina de estados
+desarrollada en Simulink. Este PC tendrá un papel doble:
+   1. Servirá de interfaz con el usuario, permitiendo seleccionar el modo de operación
+      (manual o automático), el comienzo de la partida (botón de Start), qué pieza coger
+      del tablero y dónde ubicarla (modo manual) y mostrará el estado de la partida
+      (estado del tablero).
+   2. Permitirá el control en remoto del robot a través de la máquina de estado,
+      gestionando el envío y recepción de los mensajes con el robot. En función del
+      estado y las órdenes de usuario, enviará la orden correspondiente al robot
+      manipulador. Asimismo, recibirá información acerca del estado del robot y la
+      evolución de la partida.
+                                                                    Sistemas Ciberfísicos
+                                                                             Curso 25/26
+
+
+
+Es importante que el usuario del PC central sepa en todo momento en qué estado se
+encuentra el sistema.
+Sistema de comunicación
+Este sistema permitirá la comunicación remota entre el PC central y el robot manipulador.
+El tipo de comunicación elegida debe ser compatible con ambos subsistemas. Es
+importante que en todo momento desde el PC central se sepa en qué estado se encuentra
+el robot. En cuanto al formato de mensajes, los mensajes enviados por el PC central al
+robot manipulador deberán incluir información, al menos, sobre: i) acción a realizar (en
+función del estado activo en la máquina de estado); ii) posición de pieza a recoger
+(especialmente, en el caso de modo manual); iii) posición de pieza a dejar (especialmente,
+en el caso de modo manual). Por su lado, el robot deberá enviar información al PC central
+que incluya, al menos: i) proceso en el que se encuentra; ii) estado del proceso que está
+realizando; iii) información sobre el estado de la partida. Se podrá ampliar la información
+transmitida en función de las necesidades detectadas.
+Desarrollo del proyecto
+Para comprobar el adecuado funcionamiento antes de la implantación, y como
+seguimiento del desarrollo del proyecto, se han definido los siguientes puntos:
+   1. Desarrollar un modelo de estados del sistema con comunicación remota
+      contemplando las distintas acciones a desarrollar por el robot.
+   2. Realizar una prueba de funcionamiento de los movimientos de Ned-2 mediante su
+      comando remoto para validación en campo.
+   3. Verificación del sistema global en campo (PC central + Ned2).
+Además, se incluyen otras restricciones acerca del Software:
+   1. El modelo de estados debe realizarse con Matlab y Simulink, permitiendo la
+      simulación en tiempo real.
+   2. La programación del robot manipulador se hará en Python.
+NOTAS GENERALES:
+Se han identificado 4 hitos fundamentales para el desarrollo del proyecto:
+    - H1: Aprobación del documento de requisitos.
+    - H2: Verificación del funcionamiento del PC central.
+    - H3: Verificación del funcionamiento del robot manipulador.
+    - H4: Validación del sistema ciberfísico.
+    - Para alcanzar H1 se deberá entregar un documento de requisitos que identifique,
+       además, los métodos de validación y verificación del sistema. Esta documentación
+       deberá ser aceptada por el cliente.
+    - Al finalizar el diseño y verificación de cada subsistema se deberá generar un
+       entregable con la documentación especificada por el cliente.
+    - Al finalizar el proyecto, se deberán presentar los resultados del desarrollo del
+       sistema ciberfísico. Esta presentación se desarrollará en inglés.
+                                                                   Sistemas Ciberfísicos
+                                                                            Curso 25/26
+
+
+
+   -   La fecha de entrega para los distintos subsistemas será especificada por el cliente
+       previo al comienzo de cada una de las tareas a realizar.
+   -   Cualquier nueva funcionalidad que se desee incluir por parte del desarrollador del
+       sistema ciberfísico debe acordarse con el cliente. En caso de acuerdo, supondrá
+       un incentivo adicional.
+   -   Cualquier modificación de los requisitos deberá ser pactada previamente con el
+       cliente.
+   -   En el caso de detectar la imposibilidad de cumplir con algún requisito debido a
+       limitaciones técnicas, deberá comunicarse inmediatamente al cliente para evitar
+       no conformidades.
+   -   Las modificaciones anteriores deberán recogerse en una versión actualizada del
+       documento de requisitos.
+Importante: la modalidad de juego automático se considera una funcionalidad avanzada
+que estará condicionada a la evolución del proyecto.
+
+
+                    ANEXO: REGLAS DEL JUEGO 3 EN RAYA
+Objetivo: Ser el primer jugador en formar una línea de tres fichas propias.
+Material: 3 fichas por cada jugador, tablero 3x3.
+Fase 1- Colocación. Los jugadores colocan sus fichas por turnos en cualquier casilla
+vacía. Cada jugador coloca sus 3 fichas. Una vez colocadas, comienza la fase de
+movimiento.
+Fase 2 – Movimiento. En su turno, el jugador mueve una de sus fichas a alguna de las
+casillas vacías. Sólo se puede mover una ficha por turno.
+Fin del juego. Gana el jugador que consiga alinear 3 fichas propias en cualquier momento
+de la partida. En caso de que se llegara a los 10 movimientos por jugador sin alcanzar la
+victoria se declarará empate.
+

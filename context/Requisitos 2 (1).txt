@@ -1,0 +1,663 @@
+          Universidad de La Laguna
+        Sistemas Ciberfísicos – Curso 25/26
+
+
+
+
+     Documento de requisitos
+Sistema ciberfísico: 3 en raya con Ned-2
+
+
+
+
+                      Autor:
+          Pablo Navarro Domínguez
+
+                     Versión:
+                       1.2
+
+                      Fecha:
+             17 de marzo de 2026
+Registro de cambios
+
+ Versión   Fecha              Autor             Cambios
+ 0.1       10 de febrero de   Pablo   Navarro   Versión inicial del documento de requisi-
+           2026               Domínguez         tos.
+ 1.0       01 de marzo de     Pablo   Navarro
+                                                     Actualización del formato.
+           2026               Domínguez
+                                                     Reestructuración de los requisitos y
+                                                     sus verificaciones.
+
+                                                     Actualización del árbol de producto.
+
+                                                      Se añaden nuevas convenciones y de-
+                                                      finiciones.
+ 1.1       3 de marzo de      Pablo   Navarro   Se añaden los requisitos [000C-035],[000C-
+           2026               Domínguez         036], [000C-037] y [000C-038].
+ 1.2       14 de marzo de     Pablo   Navarro
+                                                     Mejora de la precisión en la redac-
+           2026               Domínguez
+                                                     ción de requisitos existentes.
+
+                                                     Renombrado de definiciones para
+                                                     mayor claridad.
+
+                                                     Reclasificación de [000C-024] y
+                                                     [000C-025] como no funcionales de
+                                                     interfaz.
+
+                                                     Traslado de [000C-015] a la categoría
+                                                     de seguridad.
+
+                                                     Actualización y mejora de los méto-
+                                                     dos y descripciones de verificación.
+
+
+
+
+                                          1
+Índice
+1. Introducción                                                                                          4
+   1.1. Resumen . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    4
+   1.2. Antecedentes . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     4
+   1.3. Convenciones . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     4
+   1.4. Definiciones . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   4
+   1.5. Documentos relacionados . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        5
+        1.5.1. Documentos aplicables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       5
+        1.5.2. Documentos de referencia . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        5
+
+2. Definición del producto                                                                               5
+   2.1. Visión general . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   5
+   2.2. Árbol de producto . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      5
+   2.3. Descripción de los elementos del producto . . . . . . . . . . . . . . . . . . . . . . . .        5
+
+3. Requisitos                                                                                             6
+   3.1. Requisitos funcionales . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      6
+        3.1.1. Sistema de juego 3 en raya . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       6
+        3.1.2. Robot Ned-2 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        7
+        3.1.3. Sistema de visión . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      7
+        3.1.4. Control central . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      7
+        3.1.5. Movimiento por turno . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         7
+        3.1.6. Piezas en reserva . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      7
+        3.1.7. Piezas apiladas . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      7
+        3.1.8. Modos de juego . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       7
+        3.1.9. Modo manual . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        7
+        3.1.10. Modo automático . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       8
+        3.1.11. Modo competición . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        8
+        3.1.12. Posición de inicio . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    8
+        3.1.13. Máquina de estados . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        8
+        3.1.14. Actualización por visión . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      8
+        3.1.15. Comunicación PC–robot . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         8
+        3.1.16. Estado del robot conocido . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       8
+        3.1.17. Formato PC→robot . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .          8
+        3.1.18. Formato robot→PC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .          9
+        3.1.19. Verificación de victoria por turno . . . . . . . . . . . . . . . . . . . . . . . . .      9
+        3.1.20. Máximo número de turnos . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         9
+   3.2. Requisitos no funcionales . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     9
+        3.2.1. Movimientos suaves . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         9
+        3.2.2. Tiempo máximo de recogida . . . . . . . . . . . . . . . . . . . . . . . . . . . .          9
+        3.2.3. Tiempo máximo de transporte . . . . . . . . . . . . . . . . . . . . . . . . . .            9
+        3.2.4. Tiempo máximo de decisión . . . . . . . . . . . . . . . . . . . . . . . . . . . .          9
+        3.2.5. Selección del jugador inicial . . . . . . . . . . . . . . . . . . . . . . . . . . . .     10
+        3.2.6. Mensajes de audio . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       10
+        3.2.7. Interfaz de usuario en PC central . . . . . . . . . . . . . . . . . . . . . . . . .       10
+        3.2.8. Control remoto y mensajería . . . . . . . . . . . . . . . . . . . . . . . . . . .         10
+        3.2.9. Final de turno rival por botón físico . . . . . . . . . . . . . . . . . . . . . . .       10
+
+
+                                                    2
+         3.2.10. Condición de inicio . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   10
+         3.2.11. Cambio de modo restringido . . . . . . . . . . . . . . . . . . . . . . . . . . . .      10
+         3.2.12. Desacoplo de movimientos (Z vs. X-Y) . . . . . . . . . . . . . . . . . . . . . .        10
+         3.2.13. Recogida de piezas . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    11
+         3.2.14. Ascenso tras recogida . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     11
+         3.2.15. Movimientos X-Y en plano de aproximación . . . . . . . . . . . . . . . . . . .          11
+         3.2.16. Posición de espera . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    11
+         3.2.17. Tipo y color de piezas por jugador . . . . . . . . . . . . . . . . . . . . . . . .      11
+         3.2.18. Mensajería TCP/IP con terminador . . . . . . . . . . . . . . . . . . . . . . .          11
+
+4. Verificación                                                                                        11
+   4.1. Métodos de verificación . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+   4.2. Matriz de verificación . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+
+
+
+
+                                                    3
+1.     Introducción
+1.1.    Resumen
+    Este documento define los requisitos del proyecto de diseño, implementación y validación de un
+sistema ciberfísico capaz de jugar una partida de 3 en raya de forma autónoma contra un jugador
+humano, utilizando un robot antropomórfico Ned-2 como manipulador de fichas y un PC central
+como sistema de control supervisado.
+
+1.2.    Antecedentes
+   El sistema se compone de tres subsistemas principales: (1) robot manipulador Ned-2 con sistema
+de visión para la ejecución de movimientos sobre el tablero, (2) PC central que implementa una
+máquina de estados en tiempo real (Matlab/Simulink) y actúa como interfaz con el usuario, y (3)
+un sistema de comunicación remoto compatible con ambos subsistemas.
+
+1.3.    Convenciones
+       Home: Nombre de la posición inicial y segura de reposo del robot.
+
+       Start: Orden de inicio de partida.
+
+       Jugador (Jug): Se refiere a la persona que ordena movimientos en modo manual a través
+       del sistema ciberfísico.
+
+       Ordenador (Ord): Se refiere al modo automático cuando el sistema ciberfísico toma deci-
+       siones sobre sus movimientos.
+
+       Rival (Riv): Se refiere al contrincante de los modos manual y automático que realiza sus
+       movimientos físicamente en el tablero.
+
+1.4.    Definiciones
+       Plano de aproximación: Plano paralelo al tablero formado por los ejes X-Y en el cual se
+       posiciona el efector final del robot para la aproximación a las piezas.
+
+       Posición de espera: Posición en la cual se sitúa el robot cuando no es su turno de juego.
+
+       Tiempo de recogida de piezas: Tiempo desde que el robot recibe el mensaje hasta que
+       agarra la pieza.
+
+       Tiempo de transporte de piezas: Tiempo desde que el robot agarra una pieza hasta que
+       la deposita en su lugar objetivo.
+
+       Tiempo de toma de decisión del Ord (Dec): Tiempo desde que el Ord recibe el mensaje
+       de que es su turno hasta que envía la orden al robot de su movimiento.
+
+       Tiempo de turno: Espacio de tiempo desde que se empieza a decidir la jugada tanto por
+       parte del Jug, Ord o Riv hasta que se envía la orden de finalización, ya sea mediante un
+       mensaje (Jug/Ord) o un botón físico (Riv).
+
+
+
+
+                                                 4
+1.5.     Documentos relacionados
+1.5.1.    Documentos aplicables
+       Enunciado del proyecto: EnunciadoProyecto.pdf.
+
+1.5.2.    Documentos de referencia
+       Estructura recomendada para el documento de requisitos: Presentación_Requisitos.pdf.
+
+
+2.     Definición del producto
+2.1.     Visión general
+    El producto final es un sistema ciberfísico para jugar 3 en raya (Jug vs. Riv asistido por robot
+en modo manual, y robot vs. Riv en modo automático). Además, se añade la opción de competir
+de manera automática contra otro robot. El Ned-2 se encarga de coger y colocar fichas sobre un
+tablero 3x3, mientras que el PC central supervisa el estado del sistema, gestiona los turnos, decide
+el movimiento del robot en modo automático y coordina la comunicación.
+
+2.2.     Árbol de producto
+[000C] Sistema ciberfísico 3 en raya
+   [00CP] PC central
+      [0CPI] Interfaz de usuario
+      [0CPM] Máquina de estados
+      [0CPC] Comunicación
+   [00CR] Robot manipulador
+      [0CRP] PC de control
+      [0CRB] Brazo robótico
+      [0CRM] Mensajería de audio
+      [0CRS] Sistema de visión
+      [0CRC] Sistema de comunicación
+
+2.3.     Descripción de los elementos del producto
+[000C] Sistema ciberfísico 3 en raya
+    Sistema completo que integra software de supervisión, manipulador robótico, visión y comuni-
+caciones para ejecutar partidas de 3 en raya en los modos manual, automático y competición.
+
+[00CP] PC central
+    Nodo principal de control y supervisión. Ejecuta la lógica del juego, coordina los turnos y gestiona
+la interacción con el usuario y con el robot.
+
+[0CPI] Interfaz de usuario
+   Componente de la aplicación del PC central que permite configurar el modo de juego, iniciar la
+partida y visualizar el estado del sistema y del tablero.
+
+
+
+                                                   5
+[0CPM] Máquina de estados
+  Implementación del flujo de funcionamiento del sistema (p. ej., arranque, espera, turno hu-
+mano/robot, actualización por visión y fin de partida), garantizando transiciones controladas.
+
+[0CPC] Comunicación
+    Capa del PC central encargada de enviar y recibir mensajes con el resto de subsistemas, encap-
+sulando el formato de mensajes, confirmaciones y estado del robot/partida.
+
+[00CR] Robot manipulador
+   Subsistema físico que ejecuta la manipulación de fichas: recogida, transporte y colocación en el
+tablero, siguiendo órdenes del PC central y manteniendo condiciones de seguridad.
+
+[0CRP] PC de control
+   Equipo asociado al robot que ejecuta el software de control del manipulador y actúa como
+pasarela entre el PC central y el hardware del brazo, gestionando el estado de ejecución.
+
+[0CRB] Brazo robótico
+    Manipulador Ned-2 (con efector final) responsable del movimiento y la interacción física con las
+fichas y el tablero, siguiendo trayectorias seguras.
+
+[0CRM] Mensajería de audio
+    Módulo del robot que reproduce mensajes/indicaciones sonoras asociadas al estado del sistema
+(inicio de turno, movimiento en curso, victoria/empate, errores, etc.).
+
+[0CRS] Sistema de visión
+    Conjunto de cámara y procesamiento de imagen que detecta el estado del tablero y la ubicación
+de las piezas para informar al PC central después de los movimientos.
+
+[0CRC] Sistema de comunicación
+   Infraestructura y protocolos que permiten el intercambio de mensajes entre el PC central y el
+subsistema del robot, asegurando conectividad y consistencia del estado.
+
+
+3.     Requisitos
+3.1.     Requisitos funcionales
+3.1.1.    Sistema de juego 3 en raya
+     RqId: [000C-001]
+    El sistema ciberfísico será capaz de jugar una partida de 3 en raya conforme a sus reglas estándar:
+cada participante coloca o mueve una pieza por turno en una cuadrícula 3x3, ganando quien consiga
+alinear tres piezas propias en fila, columna o diagonal. Si se alcanza el número máximo de turnos
+sin ganador, la partida se considera empate.
+
+
+                                                  6
+3.1.2.   Robot Ned-2
+   RqId: [000C-002]
+   La solución propuesta será compatible con el robot antropomórfico Ned-2.
+
+
+3.1.3.   Sistema de visión
+   RqId: [000C-003]
+   El robot contará con un sistema de visión encargado de determinar la ubicación de las piezas
+sobre el tablero.
+
+3.1.4.   Control central
+   RqId: [000C-004]
+    El robot se comunicará con un sistema de control central (PC central) que gestiona el desarrollo
+de la partida.
+
+3.1.5.   Movimiento por turno
+   RqId: [000C-005]
+   El robot manipulador será el encargado de mover las piezas en el tablero en el turno del Jug/Ord.
+Durante el turno del Riv, el robot permanecerá inmóvil en su posición de espera.
+
+3.1.6.   Piezas en reserva
+   RqId: [000C-006]
+    Al comienzo de la partida habrá 3 piezas apiladas verticalmente en una posición fija y predefinida
+al lado del tablero para cada jugador.
+
+3.1.7.   Piezas apiladas
+   RqId: [000C-007]
+   Mientras haya piezas disponibles en la pila de piezas, el robot deberá emplear éstas para el juego.
+En caso contrario, el robot reubicará una de sus piezas del tablero.
+
+3.1.8.   Modos de juego
+   RqId: [000C-008]
+   El sistema tendrá varios modos de juego: manual, automático y competición.
+
+3.1.9.   Modo manual
+   RqId: [000C-009]
+   En el modo manual, el Jug controlará desde el PC central qué pieza mover y a qué posición del
+tablero. El Riv realizará sus movimientos físicamente sobre el tablero.
+
+
+
+
+                                                  7
+3.1.10.   Modo automático
+   RqId: [000C-010]
+    En el modo automático, el Ord decidirá sus propios movimientos y jugará contra un Riv que
+realizará sus movimientos físicamente en el tablero.
+
+3.1.11.   Modo competición
+   RqId: [000C-011]
+   En el modo competición, los dos participantes serán robots que competirán uno contra otro
+tomando sus propias decisiones, sin intervención humana en el desarrollo de la partida.
+
+3.1.12.   Posición de inicio
+   RqId: [000C-012]
+   El robot permanecerá en la posición home hasta recibir la orden Start.
+
+3.1.13.   Máquina de estados
+   RqId: [000C-016]
+    El PC central controlará el flujo de funcionamiento mediante una máquina de estados desarro-
+llada en Simulink.
+
+3.1.14.   Actualización por visión
+   RqId: [000C-023]
+    Cada vez que termine un turno (Jug, Ord o Riv) se actualizará el estado de la partida en función
+de la visión artificial.
+
+3.1.15.   Comunicación PC–robot
+   RqId: [000C-026]
+   El sistema de comunicación permitirá el intercambio de la información requerida entre el PC
+central y el robot manipulador.
+
+3.1.16.   Estado del robot conocido
+   RqId: [000C-027]
+   El PC central deberá conocer en todo momento el estado del robot.
+
+3.1.17.   Formato PC→robot
+   RqId: [000C-028]
+   El formato de los mensajes enviados por el PC central incluirá información sobre la acción que
+debe realizar el robot y, en caso de estar en modo manual, la posición inicial y final de la ficha a
+mover.
+
+
+
+
+                                                 8
+3.1.18.    Formato robot→PC
+   RqId: [000C-029]
+    El formato de los mensajes enviados por el robot incluirá información sobre el proceso en el que
+se encuentra, su estado en el proceso e información sobre el estado de la partida.
+
+3.1.19.    Verificación de victoria por turno
+   RqId: [000C-036]
+   Al término de cada turno, el sistema verificará las condiciones de victoria propias (lógica interna)
+y del Riv (visión artificial). El resultado final se comunicará al PC central con el mensaje FIN_VIC,
+FIN_DER o FIN_EMP.
+
+3.1.20.    Máximo número de turnos
+   RqId: [000C-037]
+   Se establece un máximo de 30 turnos por partida. Si se alcanza este límite sin que ningún
+participante haya ganado, la partida se resuelve como empate.
+
+3.2.     Requisitos no funcionales
+   Estos requisitos se clasifican en: rendimiento, interfaz, seguridad y comunicación.
+
+• Rendimiento
+
+3.2.1.    Movimientos suaves
+   RqId: [000C-030]
+   Todos los movimientos que realiza el robot serán suaves y evitarán altas velocidades. Se progra-
+marán límites de velocidad máxima para cada articulación del robot.
+
+3.2.2.    Tiempo máximo de recogida
+   RqId: [000C-031]
+   El tiempo de recogida de piezas durará como máximo 15 segundos.
+
+3.2.3.    Tiempo máximo de transporte
+   RqId: [000C-032]
+   El tiempo de transporte de piezas hacia una nueva posición durará como máximo 15 segundos.
+
+3.2.4.    Tiempo máximo de decisión
+   RqId: [000C-033]
+   En los modos automático y competición, el tiempo de toma de decisión del Ord (Dec) durará
+como máximo 10 segundos.
+
+• Interfaz
+
+
+
+                                                  9
+3.2.5.    Selección del jugador inicial
+   RqId: [000C-014]
+   La interfaz implementará un mecanismo para elegir quién comienza el juego.
+
+3.2.6.    Mensajes de audio
+   RqId: [000C-022]
+   El robot emitirá mensajes de audio en función del estado de la partida (inicio de turno, movi-
+miento en curso, victoria, empate, error, etc.).
+
+3.2.7.    Interfaz de usuario en PC central
+   RqId: [000C-024]
+   El PC central contará con una interfaz de usuario que permita seleccionar el modo de juego, un
+botón Start, visualizar el estado del robot y un tablero interactivo para visualizar y jugar la partida.
+
+3.2.8.    Control remoto y mensajería
+   RqId: [000C-025]
+   El PC central permitirá el control remoto del robot gestionando el envío y recepción de mensajes
+con el robot.
+
+3.2.9.    Final de turno rival por botón físico
+   RqId: [000C-034]
+   La finalización del turno del Riv se determina mediante un botón físico.
+
+• Seguridad
+
+3.2.10.    Condición de inicio
+   RqId: [000C-013]
+    La orden de comienzo de partida se realizará desde un botón Start en el PC central. Será
+necesario que el robot esté en posición home para que dicha orden tenga efecto, garantizando que
+el sistema parte de un estado conocido y seguro.
+
+3.2.11.    Cambio de modo restringido
+   RqId: [000C-015]
+   Solo se podrá cambiar el modo de juego antes del inicio de la partida o una vez finalizada. Este
+requisito se clasifica en seguridad para evitar cambios de modo durante la ejecución que pudieran
+comprometer el comportamiento del sistema.
+
+3.2.12.    Desacoplo de movimientos (Z vs. X-Y)
+   RqId: [000C-017]
+   El robot desacoplará los movimientos en el eje Z de los movimientos en el plano X-Y.
+
+
+
+                                                  10
+3.2.13.    Recogida de piezas
+     RqId: [000C-018]
+   El efector final del robot debe colocarse sobre la pieza en el plano X-Y de aproximación y
+descender verticalmente para recogerla.
+
+3.2.14.    Ascenso tras recogida
+     RqId: [000C-019]
+     Una vez se recoge la pieza, se debe ascender verticalmente hasta el plano de aproximación X-Y.
+
+3.2.15.    Movimientos X-Y en plano de aproximación
+     RqId: [000C-020]
+     Los movimientos en el plano X-Y solo se realizarán en el plano de aproximación X-Y.
+
+3.2.16.    Posición de espera
+     RqId: [000C-021]
+     Una vez finalizado el movimiento, el robot debe volver a una posición de espera.
+
+3.2.17.    Tipo y color de piezas por jugador
+     RqId: [000C-035]
+     El Jug/Ord utilizará círculos verdes y el Riv utilizará cuadrados azules como piezas para el juego.
+
+• Comunicación
+
+3.2.18.    Mensajería TCP/IP con terminador
+     RqId: [000C-038]
+    La comunicación entre el PC central y el robot se realizará mediante TCP/IP con mensajes de
+texto plano terminados en \n.
+
+
+4.     Verificación
+4.1.    Métodos de verificación
+       Diseño: imposición en el diseño/programación que garantiza por construcción el cumplimiento
+       del requisito (p. ej., se programa el sistema para que el robot solo pueda arrancar desde home).
+
+       Análisis: comprobación mediante análisis del modelo o de tiempos registrados (p. ej., medición
+       de tiempos de ejecución).
+
+       Test: validación mediante ejecución sobre el sistema real (PC central + Ned-2), comprobando
+       que el comportamiento observado cumple el requisito.
+
+4.2.    Matriz de verificación
+
+
+
+                                                   11
+Req. ID      Nombre                       Método     Descripción mínima
+[000C-001]   Sistema de juego 3 en raya   Test       Se comprueba el funcionamiento gene-
+                                                     ral mediante el juego de partidas com-
+                                                     pletas en los diferentes modos, verifi-
+                                                     cando que se aplican las reglas del 3 en
+                                                     raya.
+[000C-002]   Robot Ned-2                  Diseño     La solución se diseña e implementa so-
+                                                     bre el Ned-2, garantizando compatibili-
+                                                     dad por construcción.
+[000C-003]   Sistema de visión            Diseño     Se incorpora una cámara y se desarrolla
+                                                     el software de procesamiento de imagen
+                                                     para detectar la ubicación de las piezas
+                                                     sobre el tablero.
+[000C-004]   Control central              Test       Se comprueba que la comunicación en-
+                                                     tre el robot y el PC central es operativa,
+                                                     verificando el intercambio de mensajes
+                                                     durante una partida.
+[000C-005]   Movimiento por turno         Test       Durante una partida, se verifica que el
+                                                     robot solo realiza movimientos duran-
+                                                     te su turno y permanece en posición de
+                                                     espera durante el turno del Riv.
+[000C-006]   Piezas en reserva            Diseño     Se define una posición fija para las pilas
+                                                     y se programa el robot para acceder a
+                                                     ellas. Se comprueba antes de la parti-
+                                                     da que hay 3 piezas apiladas en dicha
+                                                     posición.
+[000C-007]   Piezas apiladas              Diseño     Se programa el robot para emplear las
+                                                     piezas de la pila mientras estén dispo-
+                                                     nibles. Solo cuando la pila esté vacía, el
+                                                     sistema accede a piezas del tablero.
+[000C-008]   Modos de juego               Diseño     La máquina de estados se diseña para
+                                                     implementar los 3 modos de juego. Se
+                                                     comprueba en la interfaz la disponibili-
+                                                     dad de los tres modos.
+[000C-009]   Modo manual                  Test       Con el modo manual activo, se com-
+                                                     prueba que se desarrolla una partida
+                                                     completa con intervención del Jug pa-
+                                                     ra la selección de movimientos.
+[000C-010]   Modo automático              Análisis   Se verifica revisando el log de decisiones
+                                                     generado durante una partida en modo
+                                                     automático, comprobando que el Ord
+                                                     toma decisiones de forma independien-
+                                                     te.
+[000C-011]   Modo competición             Test       Se juega una partida completa entre dos
+                                                     robots sin intervención externa y se ve-
+                                                     rifica que ambos toman sus decisiones
+                                                     de forma autónoma.
+[000C-012]   Posición de inicio           Diseño     Se programa el robot para permanecer
+                                                     en home mientras no esté en partida. Se
+                                                     comprueba que el robot vuelve a home
+                                                     al finalizar o antes de iniciar.
+
+
+                                             12
+Req. ID      Nombre                         Método     Descripción mínima
+[000C-016]   Máquina de estados             Diseño     Se diseña la máquina de estados en Si-
+                                                       mulink con todos los estados y tran-
+                                                       siciones definidos. Se verifica mediante
+                                                       revisión del modelo Simulink.
+[000C-023]   Actualización por visión       Test       Tras cada turno se valida que el estado
+                                                       del tablero en la interfaz coincide con
+                                                       la posición real de las piezas detectada
+                                                       por visión artificial.
+[000C-026]   Comunicación PC–robot          Diseño     Se implementa un protocolo TCP/IP
+                                                       entre el PC central y el PC de control
+                                                       del robot. Se verifica que la conexión
+                                                       se establece y los mensajes se intercam-
+                                                       bian correctamente.
+[000C-027]   Estado del robot conocido      Análisis   Se revisa el log de mensajes y se com-
+                                                       prueba que el estado del robot queda re-
+                                                       gistrado en todo momento durante una
+                                                       partida.
+[000C-028]   Formato PC→robot               Diseño     Se programa un formato de mensajes
+                                                       con la acción a realizar y, en modo ma-
+                                                       nual, las posiciones inicial y final. Se
+                                                       verifica comprobando el formato de los
+                                                       mensajes emitidos.
+[000C-029]   Formato robot→PC               Diseño     Se programa un formato de mensajes
+                                                       con el proceso actual, el estado en el
+                                                       proceso y el estado de la partida. Se
+                                                       verifica comprobando el formato de los
+                                                       mensajes emitidos.
+[000C-036]   Verificación de victoria por   Test       Se verifican jugadas ganadoras por par-
+             turno                                     te de ambos participantes y se com-
+                                                       prueba que el sistema detecta la victo-
+                                                       ria y emite el mensaje correspondiente
+                                                       (FIN_VIC, FIN_DER o FIN_EMP).
+[000C-037]   Máximo número de turnos        Test       Se juega una partida que alcanza 30 tur-
+                                                       nos y se verifica que el sistema la resuel-
+                                                       ve como empate.
+[000C-030]   Movimientos suaves             Diseño     Se programan límites de velocidad má-
+                                                       xima para cada articulación, garanti-
+                                                       zando por construcción que los movi-
+                                                       mientos sean suaves.
+[000C-031]   Tiempo máximo de recogi-       Test       Se mide el tiempo de recogida de piezas
+             da                                        en 5 ejecuciones consecutivas y se verifi-
+                                                       ca que ninguna supera los 15 segundos.
+[000C-032]   Tiempo máximo de trans-        Test       Se mide el tiempo de transporte de pie-
+             porte                                     zas en 5 movimientos completos y se ve-
+                                                       rifica que ninguno supera los 15 segun-
+                                                       dos.
+[000C-033]   Tiempo máximo de decisión      Test       Se registran los tiempos de toma de
+                                                       decisión del Ord en modos automático
+                                                       y competición, verificando que ninguno
+                                                       supera los 10 segundos.
+
+
+                                               13
+Req. ID      Nombre                          Método   Descripción mínima
+[000C-014]   Selección del jugador inicial   Diseño   Se incluye en la interfaz un mecanismo
+                                                      de selección del jugador inicial, garan-
+                                                      tizando por construcción que dicha se-
+                                                      lección se respeta al iniciar la partida.
+[000C-022]   Mensajes de audio               Test     Se comprueba la reproducción de los
+                                                      mensajes de audio en los estados clave:
+                                                      inicio de turno, movimiento en curso y
+                                                      fin de partida.
+[000C-024]   Interfaz de usuario en PC       Diseño   Se incluyen en la interfaz todos los ele-
+             central                                  mentos necesarios: selector de modo,
+                                                      botón Start, visualizador del estado del
+                                                      robot y tablero interactivo.
+[000C-025]   Control remoto y mensaje-       Diseño   La máquina de estados se programa
+             ría                                      para gestionar el envío y recepción de
+                                                      mensajes con el robot, implementando
+                                                      el control remoto por construcción.
+[000C-034]   Final de turno por botón fí-    Test     Se verifica que el turno del Riv finaliza
+             sico                                     correctamente al pulsar el botón físico
+                                                      y que el sistema transita al siguiente es-
+                                                      tado.
+[000C-013]   Condición de inicio             Diseño   Se programa la condición de que el bo-
+                                                      tón Start solo inicia la partida si el
+                                                      robot está en home, garantizando por
+                                                      construcción el estado inicial seguro.
+[000C-015]   Cambio de modo restringi-       Test     Se intenta cambiar el modo de juego du-
+             do                                       rante una partida en curso y se verifica
+                                                      que no tiene ningún efecto. Se comprue-
+                                                      ba también que el cambio sí es posible
+                                                      antes del inicio y tras la finalización.
+[000C-017]   Desacoplo de movimientos        Diseño   Las trayectorias se programan respe-
+             (Z vs. X-Y)                              tando el desacoplo entre el eje Z y el
+                                                      plano X-Y. Se verifica mediante revisión
+                                                      del código de movimiento.
+[000C-018]   Recogida de piezas              Test     Se verifica que el robot se posiciona so-
+                                                      bre la pieza en el plano X-Y antes de
+                                                      descender verticalmente para recogerla.
+[000C-019]   Ascenso tras recogida           Test     Se verifica que el robot asciende verti-
+                                                      calmente hasta el plano de aproxima-
+                                                      ción X-Y tras recoger una pieza, antes
+                                                      de cualquier movimiento horizontal.
+[000C-020]   Movimientos X-Y en plano        Diseño   Se programan todas las posiciones de
+             de aproximación                          aproximación en el plano X-Y defini-
+                                                      do, garantizando por construcción que
+                                                      los desplazamientos horizontales se rea-
+                                                      lizan a la altura correcta.
+[000C-021]   Posición de espera              Diseño   Se programa una posición de espera de-
+                                                      finida a la que el robot vuelve automá-
+                                                      ticamente al finalizar cada movimiento.
+
+
+
+
+                                                14
+Req. ID      Nombre                       Método   Descripción mínima
+[000C-035]   Tipo y color de piezas por   Diseño   Se programa el sistema de visión para
+             jugador                               reconocer círculos verdes (Jug/Ord) y
+                                                   cuadrados azules (Riv). Se verifica to-
+                                                   mando una foto de la zona de juego an-
+                                                   tes de la partida.
+[000C-038]   Mensajería TCP/IP     con    Diseño   Se programa el protocolo con mensajes
+             terminador                            TCP/IP de texto plano terminados en
+                                                   \n. Se verifica comprobando el formato
+                                                   de los mensajes intercambiados.
+
+
+
+
+                                             15
+

@@ -1,0 +1,486 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[spanish,es-tabla]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{tikz}
+
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
+
+\geometry{margin=2.5cm}
+\setstretch{1.15}
+\setlist[itemize]{leftmargin=1.3cm}
+\setlist[enumerate]{leftmargin=1.1cm}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.08}
+
+\title{\vspace{-2cm}
+\textbf{Universidad de La Laguna}\\
+\textbf{Sistemas Ciberf\'isicos -- Curso 25/26}\\[1.5cm]
+\textbf{Documento t\'ecnico final}\\
+\textbf{Sistema ciberf\'isico: 3 en raya con Ned-2}}
+\author{Pablo Navarro Dom\'inguez}
+\date{11 de mayo de 2026}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Resumen}
+Este documento t\'ecnico final consolida el desarrollo del sistema ciberf\'isico de 3 en raya con Ned-2, integrando los avances recogidos en los dos documentos t\'ecnicos previos y aline\'andolos con el enunciado oficial del proyecto. El objetivo funcional del sistema es ejecutar una partida f\'isica completa frente a un rival humano, combinando supervisi\'on en tiempo real, manipulaci\'on segura, detecci\'on visual del tablero y comunicaci\'on remota entre nodos de control.
+
+La soluci\'on no se ha limitado a una descripci\'on abstracta del sistema, sino que se apoya en componentes concretos ya desarrollados: ComRobot.py como n\'ucleo de control de partida en el robot, VisionRobot.py como m\'odulo de visi\'on, Ned2\_ULL.py como conjunto de utilidades de calibraci\'on y movimiento, y los bloques SimulinkEmisor.m y SimulinkReceptor.m como interfaz entre el PC central y el protocolo TCP/IP.
+\par
+La implementaci\'on actual se estructura en dos capas de decisi\'on y ejecuci\'on: el PC central, responsable del control supervisado mediante m\'aquina de estados en Simulink, y el PC del robot, donde se ejecuta la l\'ogica Python de movimiento, visi\'on, inteligencia artificial y mensajer\'ia. Esta separaci\'on ha permitido mantener trazabilidad de eventos, reducir acoplamiento entre subsistemas y facilitar la verificaci\'on incremental por hitos.
+\par
+En el estado presente del proyecto se dispone de funcionamiento operativo en modo manual y modo autom\'atico, con protocolo TCP/IP activo, ciclo de turnos completo y validaci\'on de condiciones de fin de partida. El cierre final del documento se completar\'a con las evidencias experimentales restantes y con los resultados de la versi\'on definitiva de c\'odigo.
+
+\section{Alcance del documento final}
+El alcance de este informe incluye la descripci\'on t\'ecnica de la soluci\'on desarrollada en el PC central, el PC de control del robot, el subsistema de visi\'on y la capa de comunicaciones. Tambi\'en cubre las decisiones de dise\~no adoptadas para satisfacer las restricciones del enunciado, en particular las asociadas a seguridad cinem\'atica, sincronizaci\'on de turnos y capacidad de supervisi\'on remota.
+
+Adem\'as, se incorporan detalles de hardware y software que ya aparec\'ian en los dos documentos previos: la configuraci\'on de visi\'on del Ned-2, la posici\'on home como estado seguro de inicio, las limitaciones temporales de recogida y transporte, el uso de mensajes de texto terminados en salto de l\'inea y el papel de la IA en el modo autom\'atico.
+\par
+Desde el punto de vista de verificaci\'on, el documento organiza el estado de cumplimiento de requisitos, indicando qu\'e aspectos ya fueron validados en entregables anteriores y qu\'e aspectos permanecen pendientes para la campa\~na final de pruebas en campo. Se mantiene, adem\'as, una estructura de evidencias compatible con la trazabilidad exigida por el cliente.
+\par
+Quedan fuera del alcance de esta revisi\'on la redacci\'on de conclusiones definitivas de validaci\'on y la consolidaci\'on de resultados de la ultima iteraci\'on de software, que dependen de pruebas adicionales sobre el sistema global.
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{p{0.18\textwidth} p{0.26\textwidth} p{0.26\textwidth} p{0.20\textwidth}}
+\toprule
+\textbf{Hito} & \textbf{Objetivo de proyecto} & \textbf{Cobertura documental actual} & \textbf{Estado} \\
+\midrule
+H1 & Aprobaci\'on del documento de requisitos & Referencia de requisitos y matriz de validaci\'on & Completado \\
+H2 & Verificaci\'on del PC central & Arquitectura de control y protocolo Simulink & Avanzado \\
+H3 & Verificaci\'on del robot manipulador & Control de movimiento, visi\'on y seguridad & Avanzado \\
+H4 & Validaci\'on del sistema ciberf\'isico & Procedimientos y evidencias de cierre & En curso \\
+\bottomrule
+\end{tabular}
+\caption{Cobertura del documento respecto a los hitos del proyecto.}
+\end{table}
+
+\section{Descripci\'on t\'ecnica de la soluci\'on final}
+
+\subsection{Arquitectura general del sistema}
+La arquitectura final implementa un esquema distribuido de supervisi\'on y ejecuci\'on. El PC central act\'ua como nodo de control de alto nivel y concentra la interfaz de usuario, la m\'aquina de estados y la coordinaci\'on de la partida. El PC del robot ejecuta la capa de campo: control de movimiento, percepci\'on visual, c\'alculo de jugada en modo autom\'atico y notificaci\'on de eventos al sistema central.
+\par
+El ciclo operativo comienza con la selecci\'on de modo y la verificaci\'on de precondiciones de seguridad (home + Start), contin\'ua con la alternancia de turnos y finaliza cuando se detecta una condici\'on de victoria, derrota o empate. Esta estructura se dise\~n\'o para satisfacer las exigencias del enunciado sobre supervisi\'on continua del estado y control remoto del robot.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners, align=center, minimum width=3.2cm, minimum height=1.1cm, fill=gray!8, font=\small},
+  arrow/.style={-Latex, thick}
+]
+\node[box] (pc) {PC central\\Interfaz + Simulink};
+\node[box, right=3.6cm of pc] (pcr) {PC robot\\Python de control};
+\node[box, below=2.1cm of pcr] (ned) {Robot Ned-2\\Movimiento + audio};
+\node[box, below=2.1cm of pc] (vis) {Visi\'on artificial\\Detecci\'on tablero};
+
+% PC central -> PC robot
+\draw[arrow] (pc.east) -- node[above,pos=0.5]{INI, MOV} (pcr.west);
+
+% PC robot -> PC central (ruta superior para evitar solape)
+\draw[arrow] (pcr.north) |- ++(0,0.9) -| node[above,pos=0.5]{DEC, ACT, FTJ, FTU, FIN} (pc.north);
+
+% PC robot -> Robot
+\draw[arrow] (pcr.south) -- node[right,pos=0.52]{Comandos API} (ned.north);
+
+% Robot -> Vision
+\draw[arrow] (ned.west) -- node[below,pos=0.5]{Imagen} (vis.east);
+
+% Vision -> PC robot (ruta lateral para no cruzar etiquetas)
+\draw[arrow] (vis.north) |- ++(0,0.9) -| node[left,pos=0.25]{Estado visual} (pcr.south);
+\end{tikzpicture}
+\caption{Gr\'afica de arquitectura funcional y flujo de informaci\'on del sistema.}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{p{0.22\textwidth} p{0.25\textwidth} p{0.45\textwidth}}
+\toprule
+\textbf{Subsistema} & \textbf{Tecnolog\'ia principal} & \textbf{Funci\'on principal en el sistema} \\
+\midrule
+PC central & Matlab/Simulink & Supervisar estados, coordinar turnos y presentar estado de partida al usuario. \\
+PC robot & Python + sockets & Ejecutar l\'ogica de juego, control de movimiento y comunicaci\'on con el PC central. \\
+Robot Ned-2 & API pyniryo & Manipular piezas en tablero siguiendo restricciones cinem\'aticas de seguridad. \\
+Visi\'on artificial & OpenCV + c\'amara del robot & Detectar estado del tablero rival tras su turno y actualizar partida. \\
+\bottomrule
+\end{tabular}
+\caption{Resumen de responsabilidades t\'ecnicas por subsistema.}
+\end{table}
+
+\subsection{Subsistemas software desarrollados}
+Los ficheros desarrollados para el PC del robot y el PC central ya permiten distinguir claramente las capas de responsabilidad del sistema. ComRobot.py concentra el bucle de partida, el control de turnos y la emisi\'on de audio; VisionRobot.py procesa la imagen de la c\'amara integrada y devuelve las casillas ocupadas; Ned2\_ULL.py agrupa utilidades de calibraci\'on y configuraci\'on; y los dos bloques de Simulink materializan la comunicaci\'on bidireccional con el modelo del PC central.
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{p{0.22\textwidth} p{0.20\textwidth} p{0.48\textwidth}}
+\toprule
+\textbf{Archivo} & \textbf{Tipo} & \textbf{Responsabilidad principal} \\
+\midrule
+ComRobot.py & Python & Bucle principal de partida, secuenciaci\'on de movimientos, gesti\'on de turnos y mensajes de estado. \\
+VisionRobot.py & Python & Detecci\'on visual de fichas rivales, correcci\'on de perspectiva y mapeo a casillas del tablero. \\
+Ned2\_ULL.py & Python & Utilidades de calibraci\'on HSV y apoyo a configuraci\'on del robot. \\
+SimulinkEmisor.m & MATLAB & Formateo de comandos INI/MOV para enviarlos al robot. \\
+SimulinkReceptor.m & MATLAB & Parseo de mensajes recibidos y exposici\'on de se\~nales discretas en Simulink. \\
+\bottomrule
+\end{tabular}
+\caption{Relaci\'on de componentes software desarrollados y su funci\'on t\'ecnica.}
+\end{table}
+
+\subsection{Caracter\'isticas principales y decisiones de dise\~no por subsistema}
+
+\subsubsection{PC central (Simulink + control de partida)}
+El PC central implementa el control supervisado en tiempo real solicitado en el enunciado. La m\'aquina de estados en Simulink secuencia las fases de espera, orden de movimiento, confirmaci\'on de ejecuci\'on y evaluaci\'on de continuidad de partida. Esta representaci\'on permite validar transiciones de forma expl\'icita y facilita la interpretaci\'on del estado por parte del operador.
+\par
+La interfaz de comunicaci\'on se realiza mediante funciones MATLAB que convierten comandos y eventos entre se\~nales de simulaci\'on y tramas de protocolo. Se adopt\'o una sem\'antica de pulsos de un ciclo para eventos discretos (DEC, FTJ, FTU, FIN), evitando disparos m\'ultiples y mejorando el acoplamiento temporal con el modelo de estados.
+
+\subsubsection{Subsistema robot (control de movimiento)}
+El control de movimiento del Ned-2 est\'a implementado en ComRobot.py, donde se integra la recepci\'on de comandos, la planificaci\'on de secuencias pick-and-place y la notificaci\'on de estado. El sistema soporta modos manual y autom\'atico sobre una arquitectura com\'un de turnos, lo que permite conservar el mismo ciclo de ejecuci\'on independientemente de qui\'en decide la jugada.
+\par
+Se ha adoptado una estrategia de seguridad basada en desacoplo cinem\'atico Z/X-Y, tal como exige el enunciado. El robot primero se posiciona en una pose de aproximaci\'on, desciende verticalmente para recoger/dejar, y retorna al plano de aproximaci\'on antes de cualquier desplazamiento horizontal. Esta l\'ogica se complementa con limitaci\'on de velocidad y retorno a posici\'on de espera al final de cada movimiento.
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{p{0.28\textwidth} p{0.18\textwidth} p{0.42\textwidth}}
+\toprule
+\textbf{Elemento del Ned-2} & \textbf{Dato t\'ecnico} & \textbf{Uso en el proyecto} \\
+\midrule
+Grados de libertad & 6 & Permiten posicionar el efector final sobre el tablero y en la zona de reserva. \\
+Sistema de visi\'on & C\'amara RGB integrada & Captura el tablero para detectar movimientos del rival. \\
+Efector final & Pinza de dedos & Recogida y colocaci\'on de fichas. \\
+Conectividad del robot & TCP/IP / rosbridge & Acceso mediante API pyniryo desde Python. \\
+L\'imite de velocidad & 50 en la configuraci\'on usada & Garantizar movimientos suaves y seguros. \\
+\bottomrule
+\end{tabular}
+\caption{Resumen del hardware y configuraci\'on funcional del Ned-2 empleada en el proyecto.}
+\end{table}
+
+\subsubsection{Sistema de visi\'on}
+El subsistema de visi\'on utiliza la c\'amara integrada en el robot para actualizar el estado del tablero tras el turno rival. El pipeline de procesamiento incluye normalizaci\'on geom\'etrica del workspace, segmentaci\'on por color en HSV y asignaci\'on de detecciones a la rejilla 3x3. El resultado se publica como posiciones discretas en el protocolo de comunicaci\'on.
+\par
+Una decisi\'on de dise\~no especialmente relevante ha sido separar fuentes de verdad: el estado de fichas propias se mantiene por l\'ogica interna, mientras que el estado rival se obtiene por visi\'on. Esta separaci\'on reduce sensibilidad a errores de detecci\'on de las propias piezas y mejora la consistencia del ciclo de decisi\'on autom\'atica.
+
+Durante el desarrollo se incorpor\'o una herramienta interactiva de calibraci\'on HSV mediante trackbars para facilitar ajustes seg\'un condiciones de iluminaci\'on. Esta funcionalidad fue especialmente importante en las pruebas iniciales, ya que el documento de requisitos no solo exige detectar la partida sino hacerlo de forma fiable y repetible en campo.
+
+\subsubsection{Comunicaci\'on TCP/IP}
+La comunicaci\'on remota se ha implementado sobre TCP/IP con mensajes ASCII terminados en fin de l\'inea. Esta elecci\'on prioriza simplicidad de depuraci\'on y compatibilidad directa entre Python y Simulink, manteniendo suficiente expresividad para incluir acci\'on solicitada, estado de proceso y estado de partida, tal como especifica el enunciado.
+\par
+En la direcci\'on PC central $\rightarrow$ robot se transmiten \'ordenes de inicializaci\'on y movimiento; en la direcci\'on opuesta se reportan eventos de decisi\'on, actualizaci\'on visual y cierre de turno/partida. El protocolo se ha dise\~nado con campos extensibles para absorber futuras necesidades sin redise\~no completo.
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{p{0.25\textwidth} p{0.26\textwidth} p{0.39\textwidth}}
+\toprule
+\textbf{Estructura del mensaje} & \textbf{Contenido} & \textbf{Interpretaci\'on} \\
+\midrule
+IDN arg1 arg2 ...\textbackslash n & Identificador + argumentos & Formato gen\'erico legible y compatible con parser por l\'inea. \\
+INI modo\textbackslash n & Modo = MAN / AUT / COM & Inicio de partida en el modo seleccionado. \\
+MOV origen destino\textbackslash n & Origen y destino & Orden de recogida y colocaci\'on en modo manual. \\
+ACT p1 p2 p3\textbackslash n & Casillas detectadas & Actualizaci\'on visual del tablero rival. \\
+FIN res\textbackslash n & VIC / DER / EMP & Cierre de partida con resultado final. \\
+\bottomrule
+\end{tabular}
+\caption{Formato general de los mensajes intercambiados entre PC central y robot.}
+\end{table}
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{p{0.22\textwidth} p{0.26\textwidth} p{0.42\textwidth}}
+\toprule
+\textbf{Mensaje} & \textbf{Origen} & \textbf{Momento de uso} \\
+\midrule
+INI modo & PC central & Justo antes de comenzar la partida. \\
+DEC & Robot & Cuando la IA ha calculado su movimiento. \\
+ACT p1 p2 p3 & Robot & Tras capturar la imagen al terminar el turno rival. \\
+FTJ & Robot & Al finalizar el movimiento físico propio. \\
+FTU & Robot & Al cerrar el turno del rival humano. \\
+FIN res & Robot & Cuando el juego termina en victoria, derrota o empate. \\
+\bottomrule
+\end{tabular}
+\caption{Secuencia funcional de mensajes empleada durante una partida completa.}
+\end{table}
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{p{0.15\textwidth} p{0.21\textwidth} p{0.56\textwidth}}
+\toprule
+\textbf{Direcci\'on} & \textbf{Mensaje} & \textbf{Informaci\'on funcional transportada} \\
+\midrule
+PC central $\rightarrow$ robot & INI modo & Inicio de partida y selecci\'on de modo de operaci\'on (MAN/AUT). \\
+PC central $\rightarrow$ robot & MOV origen destino & Orden de recogida y colocaci\'on de ficha en modo manual. \\
+Robot $\rightarrow$ PC central & DEC & Confirmaci\'on de decisi\'on tomada en modo autom\'atico. \\
+Robot $\rightarrow$ PC central & ACT p1 p2 p3 & Posiciones detectadas del rival tras adquisici\'on visual. \\
+Robot $\rightarrow$ PC central & FTJ / FTU & Fin de turno del robot / fin de turno del rival. \\
+Robot $\rightarrow$ PC central & FIN res & Resultado final de partida (VIC, DER o EMP). \\
+\bottomrule
+\end{tabular}
+\caption{Tabla de interfaz del protocolo de mensajer\'ia PC central--robot.}
+\end{table}
+
+\subsubsection{IA y decisi\'on autom\'atica}
+La toma de decisi\'on en modo autom\'atico se realiza mediante una estrategia minimax adaptada a las dos fases del juego. El algoritmo utiliza profundidades distintas seg\'un etapa (colocaci\'on o movimiento) e incorpora una componente aleatoria controlada para mantener una dificultad media adecuada al entorno demostrativo del proyecto.
+\par
+El enunciado fija adem\'as objetivos temporales concretos: 15 s m\'aximo para recogida, 15 s para transporte y 10 s para decisi\'on autom\'atica. Estas cotas no solo son criterios de validaci\'on, sino tambi\'en condicionantes de dise\~no que han orientado la elecci\'on de profundidad de b\'usqueda, la parametrizaci\'on de movimiento y la secuenciaci\'on de tareas de percepci\'on y control.
+
+La versi\'on desarrollada en el PC del robot mantiene adem\'as la emisi\'on de mensajes de voz mediante la API del robot para reforzar la experiencia del jugador. Durante el desarrollo se prob\'o reproducci\'on de audio asociada a inicio de turno, movimiento en curso y fin de partida, lo que conecta directamente con uno de los requisitos funcionales del documento de requisitos.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  stepbox/.style={draw, rounded corners, minimum width=2.8cm, minimum height=0.9cm, align=center, fill=gray!10, font=\small},
+    link/.style={-Latex, thick}
+]
+\node[stepbox] (h) {Estado de reposo\\robot en home};
+\node[stepbox, below=0.55cm of h] (st) {Start + selecci\'on de modo};
+\node[stepbox, below=0.55cm of st] (tr) {Turno del robot\\ejecuci\'on de jugada};
+\node[stepbox, below=0.55cm of tr] (tu) {Turno del rival\\actualizaci\'on por visi\'on};
+\node[stepbox, below=0.55cm of tu] (ev) {Evaluaci\'on\\FIN / continuaci\'on};
+
+\draw[link] (h) -- (st);
+\draw[link] (st) -- node[right,pos=0.5]{INI} (tr);
+\draw[link] (tr) -- node[right,pos=0.5]{FTJ} (tu);
+\draw[link] (tu) -- node[right,pos=0.5]{ACT / FTU} (ev);
+\draw[link] (ev.east) -- ++(1.0,0) |- node[pos=0.25,right]{si no FIN} (tr.east);
+\end{tikzpicture}
+\caption{Gr\'afica de ciclo de turno en la m\'aquina de estados del sistema.}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{p{0.34\textwidth} p{0.22\textwidth} p{0.36\textwidth}}
+\toprule
+\textbf{M\'etrica temporal de enunciado} & \textbf{Objetivo} & \textbf{Respuesta de dise\~no actual} \\
+\midrule
+Proceso de recogida de pieza & $\leq 15$ s & Poses de aproximaci\'on estables y secuencia pick-and-place estandarizada. \\
+Proceso de transporte de pieza & $\leq 15$ s & Trayectorias desacopladas Z/X-Y con control de velocidad y sincronizaci\'on. \\
+Toma de decisi\'on en modo AUT & $\leq 10$ s & Minimax con profundidad acotada y heur\'istica por fase de juego. \\
+\bottomrule
+\end{tabular}
+\caption{Gr\'afica tabulada de objetivos temporales y soluci\'on t\'ecnica adoptada.}
+\end{table}
+
+\section{Validaci\'on pormenorizada de requisitos}
+
+\subsection{Procedimiento general de validaci\'on}
+Para cada requisito se seguir\'a el siguiente procedimiento:
+\begin{enumerate}
+  \item Preparar el escenario de prueba (hardware, software y estado inicial).
+  \item Ejecutar el caso de validaci\'on.
+  \item Registrar el resultado observado (log, tiempo, estado o evento).
+  \item Comparar el resultado con el criterio de aceptaci\'on.
+  \item Marcar el estado: Cumple / No cumple / Pendiente.
+  \item Adjuntar evidencia con identificador unico.
+\end{enumerate}
+
+\textbf{Nomenclatura recomendada de evidencias:}
+\begin{itemize}
+  \item EV-RQ-XXXX-01\_FOTO.jpg
+  \item EV-RQ-XXXX-01\_VIDEO.mp4
+  \item EV-RQ-XXXX-01\_LOG.txt
+  \item EV-RQ-XXXX-01\_CAPTURA.png
+\end{itemize}
+
+\subsection{Requisitos ya verificados en documentos t\'ecnicos previos}
+Estos requisitos aparecen verificados en los documentos t\'ecnicos previos y no requieren nueva verificaci\'on salvo regresi\'on:
+
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.12\textwidth} >{\raggedright\arraybackslash}p{0.15\textwidth} >{\raggedright\arraybackslash}p{0.17\textwidth} >{\raggedright\arraybackslash}p{0.46\textwidth}@{}}
+\toprule
+\textbf{RqId} & \textbf{Estado actual} & \textbf{Fuente previa} & \textbf{Evidencia base} \\
+\midrule
+\endhead
+000C-002 & Verificado & Documento t\'ecnico 1 & Robot Ned-2 identificado y operativo \\
+000C-003 & Verificado & Documento t\'ecnico 1 & C\'amara integrada y visibilidad del tablero \\
+000C-004 & Verificado & Documento t\'ecnico 1 & Conexi\'on PC central operativa \\
+000C-006 & Verificado & Documento t\'ecnico 2 & Pila de piezas y poses de almac\'en \\
+000C-013 & Verificado & Documento t\'ecnico 1 & Start condicionado a home \\
+000C-016 & Verificado & Documento t\'ecnico 1 & M\'aquina de estados implementada \\
+000C-021 & Verificado & Documento t\'ecnico 2 & Retorno a posici\'on de espera \\
+000C-025 & Verificado & Documento t\'ecnico 2 & Gesti\'on remota de mensajer\'ia \\
+000C-026 & Verificado & Documento t\'ecnico 1 & Intercambio PC--robot validado \\
+000C-030 & Verificado & Documento t\'ecnico 2 & L\'imite de velocidad configurado \\
+000C-035 & Verificado & Documento t\'ecnico 2 & Distinci\'on de piezas por tipo/color \\
+000C-036 & Verificado & Documento t\'ecnico 2 & Verificaci\'on victoria/derrota/empate \\
+000C-037 & Verificado & Documento t\'ecnico 2 & M\'aximo turnos (30) verificado \\
+000C-038 & Verificado & Documento t\'ecnico 2 & Mensajes con terminador de l\'inea \\
+\bottomrule
+\end{longtable}
+}
+
+\subsection{Requisitos pendientes por verificar (tabla preparada)}
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.09\textwidth} >{\raggedright\arraybackslash}p{0.15\textwidth} >{\raggedright\arraybackslash}p{0.11\textwidth} >{\raggedright\arraybackslash}p{0.42\textwidth} >{\raggedright\arraybackslash}p{0.11\textwidth}@{}}
+\toprule
+\textbf{RqId} & \textbf{Nombre} & \textbf{M\'etodo} & \textbf{Procedimiento de validaci\'on (resumen)} & \textbf{Estado} \\
+\midrule
+\endhead
+000C-001 & Sistema de juego 3 en raya & Test & Ejecutar partidas completas y verificar cumplimiento de reglas en todos los modos habilitados. & Pendiente \\
+000C-005 & Movimiento por turno & Test & Verificar que el robot solo se mueve en su turno y permanece en espera en turno rival. & Pendiente \\
+000C-007 & Piezas apiladas & Dise\~no + Test & Validar uso de pila mientras existan piezas y reubicaci\'on desde tablero al agotarse. & Pendiente \\
+000C-008 & Modos de juego & Dise\~no + Test & Comprobar disponibilidad y selecci\'on de modos en interfaz y m\'aquina de estados. & Pendiente \\
+000C-009 & Modo manual & Test & Validar partida completa con selecci\'on de movimientos por el usuario. & Pendiente \\
+000C-010 & Modo autom\'atico & An\'alisis + Test & Registrar decisiones autom\'aticas y comprobar autonom\'ia de jugadas. & Pendiente \\
+000C-011 & Modo competici\'on & Test & Ejecutar partida robot vs robot sin intervenci\'on manual. & Pendiente \\
+000C-012 & Posici\'on de inicio & Dise\~no + Test & Confirmar permanencia en home hasta Start. & Pendiente \\
+000C-014 & Selecci\'on jugador inicial & Dise\~no + Test & Verificar selector y correspondencia con primer turno. & Pendiente \\
+000C-015 & Cambio de modo restringido & Test & Probar cambio en partida y fuera de partida; validar bloqueo/permitido seg\'un estado. & Pendiente \\
+000C-017 & Desacoplo Z vs X-Y & Dise\~no + Test & Revisar trayectorias y observar secuencia vertical/horizontal en ejecuci\'on real. & Pendiente \\
+000C-018 & Recogida de piezas & Test & Comprobar aproximaci\'on X-Y y descenso vertical para agarre. & Pendiente \\
+000C-019 & Ascenso tras recogida & Test & Verificar ascenso vertical tras agarre antes de desplazamiento horizontal. & Pendiente \\
+000C-020 & Movimientos X-Y en plano de aproximaci\'on & Dise\~no + Test & Confirmar desplazamientos horizontales solo en plano de aproximaci\'on. & Pendiente \\
+000C-022 & Mensajes de audio & Test & Validar reproducci\'on en estados clave: inicio, movimiento y fin de partida. & Pendiente \\
+000C-023 & Actualizaci\'on por visi\'on & Test & Contrastar tras cada turno el estado detectado con el tablero real. & Pendiente \\
+000C-024 & Interfaz de usuario PC central & Dise\~no + Test & Verificar presencia y funcionamiento de elementos requeridos de interfaz. & Pendiente \\
+000C-027 & Estado del robot conocido & An\'alisis & Revisar trazas para comprobar disponibilidad continua del estado del robot. & Pendiente \\
+000C-028 & Formato PC$\rightarrow$robot & Dise\~no + Test & Validar estructura y argumentos de mensajes de comando en trazas reales. & Pendiente \\
+000C-029 & Formato robot$\rightarrow$PC & Dise\~no + Test & Validar estructura y argumentos de mensajes de estado/evento en trazas reales. & Pendiente \\
+000C-031 & Tiempo m\'aximo de recogida & Test & Medir al menos 5 ejecuciones de recogida y verificar tiempo $\leq 15$ s. & Pendiente \\
+000C-032 & Tiempo m\'aximo de transporte & Test & Medir al menos 5 transportes completos y verificar tiempo $\leq 15$ s. & Pendiente \\
+000C-033 & Tiempo m\'aximo de decisi\'on & Test & Medir tiempo de decisi\'on en autom\'atico/competici\'on y verificar $\leq 10$ s. & Pendiente \\
+000C-034 & Fin de turno rival por bot\'on f\'isico & Test & Accionar bot\'on f\'isico y comprobar transici\'on al siguiente estado. & Pendiente \\
+\bottomrule
+\end{longtable}
+}
+
+\subsection{Plantilla de ficha de verificaci\'on individual}
+Para cada requisito pendiente, completar la siguiente ficha:
+\begin{itemize}
+  \item RqId: [000C-XXX]
+  \item Nombre: [Nombre del requisito]
+  \item Fecha de prueba: [dd/mm/aaaa]
+  \item Versi\'on de software: [tag/commit]
+  \item Configuraci\'on hardware: [resumen]
+  \item Precondiciones: [estado inicial]
+  \item Pasos ejecutados: [lista de pasos]
+  \item Resultado observado: [descripci\'on objetiva]
+  \item Criterio de aceptaci\'on: [criterio]
+  \item Decisi\'on: [Cumple / No cumple]
+  \item Evidencias asociadas: [lista de archivos]
+  \item Incidencias detectadas: [si/no + detalle]
+\end{itemize}
+
+\section{Gu\'ia r\'apida para la puesta en marcha}
+
+\subsection{Prerrequisitos}
+\textbf{Hardware m\'inimo:}
+\begin{itemize}
+  \item Robot Ned-2 calibrado.
+  \item C\'amara del robot operativa.
+  \item PC central y PC de control del robot conectados por red.
+  \item Tablero y piezas en posici\'on inicial.
+\end{itemize}
+
+\textbf{Software m\'inimo:}
+\begin{itemize}
+  \item Entorno Python con dependencias del proyecto.
+  \item Modelo Simulink con bloques de emisi\'on/recepci\'on configurados.
+  \item Scripts de control de robot y visi\'on disponibles.
+\end{itemize}
+
+\subsection{Secuencia de arranque recomendada}
+\begin{enumerate}
+  \item Verificar conexi\'on de red entre PC central y PC del robot.
+  \item Encender y calibrar el Ned-2.
+  \item Cargar configuraci\'on de poses y par\'ametros de visi\'on.
+  \item Iniciar servicios/scripts de control en el PC del robot.
+  \item Abrir el modelo de control en PC central (Simulink).
+  \item Configurar IP/puertos y arrancar la comunicaci\'on.
+  \item Confirmar estado home y seleccionar modo de juego.
+  \item Pulsar Start para iniciar partida.
+\end{enumerate}
+
+\subsection{Comprobaciones de arranque (smoke test)}
+\begin{itemize}
+  \item Prueba de conectividad entre equipos.
+  \item Env\'io y recepci\'on de mensaje de prueba TCP/IP.
+  \item Verificaci\'on de un movimiento simple del robot.
+  \item Verificaci\'on de captura de imagen y detecci\'on b\'asica.
+\end{itemize}
+
+\subsection{Checklist de configuraci\'on inicial}
+\begin{itemize}
+  \item Red operativa y par\'ametros IP correctos.
+  \item Robot en home antes de Start.
+  \item Piezas en posici\'on de inicio (almacenes).
+  \item Modo de juego correcto seleccionado.
+  \item Registro de logs activado para evidencias.
+\end{itemize}
+
+\subsection{Incidencias frecuentes y acci\'on r\'apida}
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.22\textwidth} >{\raggedright\arraybackslash}p{0.24\textwidth} >{\raggedright\arraybackslash}p{0.46\textwidth}@{}}
+\toprule
+\textbf{S\'intoma} & \textbf{Posible causa} & \textbf{Acci\'on recomendada} \\
+\midrule
+\endhead
+No hay conexi\'on PC--robot & IP/puerto incorrecto o firewall & Revisar configuraci\'on de red y reglas de firewall \\
+Visi\'on detecta mal las piezas & Umbrales descalibrados o iluminaci\'on variable & Recalibrar HSV y estabilizar iluminaci\'on \\
+Movimiento incompleto & Pose mal definida o timeout & Revisar poses, l\'imites de velocidad y logs \\
+Start no inicia & Robot no est\'a en home & Llevar robot a home y repetir inicio \\
+\bottomrule
+\end{longtable}
+}
+
+\section{Anexos de evidencias}
+
+\subsection{Indice de evidencias (plantilla)}
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.21\textwidth} >{\raggedright\arraybackslash}p{0.15\textwidth} >{\raggedright\arraybackslash}p{0.09\textwidth} >{\raggedright\arraybackslash}p{0.31\textwidth} >{\raggedright\arraybackslash}p{0.10\textwidth}@{}}
+\toprule
+\textbf{ID evidencia} & \textbf{Requisito} & \textbf{Tipo} & \textbf{Descripci\'on} & \textbf{Estado} \\
+\midrule
+\endhead
+EV-RQ-000C-001-01 & [000C-001] & Video & Partida completa de validaci\'on & Pendiente \\
+EV-RQ-000C-023-01 & [000C-023] & Captura & Estado detectado por visi\'on & Pendiente \\
+EV-RQ-000C-033-01 & [000C-033] & Log & Tiempos de decisi\'on en modo autom\'atico & Pendiente \\
+\bottomrule
+\end{longtable}
+}
+
+\subsection{Anexo de trazas de comunicaci\'on (pendiente)}
+\begin{itemize}
+  \item Incluir logs crudos PC central $\rightarrow$ robot.
+  \item Incluir logs crudos robot $\rightarrow$ PC central.
+  \item Incluir resumen de secuencias por modo de juego.
+\end{itemize}
+
+\subsection{Anexo fotogr\'afico/video (pendiente)}
+\begin{itemize}
+  \item Evidencias de montaje.
+  \item Evidencias de ejecuci\'on por requisito.
+  \item Evidencias de interfaz y estados.
+\end{itemize}
+
+\section{Cierre (plantilla)}
+En la versi\'on final de este documento se incluir\'an:
+\begin{itemize}
+  \item Resultado final por requisito (Cumple / No cumple).
+  \item Justificaci\'on de desviaciones, si las hubiera.
+  \item Riesgos residuales y recomendaciones de mejora.
+  \item Conclusiones t\'ecnicas definitivas.
+\end{itemize}
+
+\end{document}

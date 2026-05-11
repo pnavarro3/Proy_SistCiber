@@ -1,0 +1,586 @@
+          Universidad de La Laguna
+
+        Sistemas Ciberfísicos – Curso 25/26
+
+
+
+
+        Documento técnico
+
+Programación del robot y comunicación
+
+
+
+
+                      Autor:
+
+          Pablo Navarro Domínguez
+
+                      Fecha:
+
+             17 de marzo de 2026
+Documento técnico                                                  Programación del robot y comunicación
+
+
+
+Índice
+1. Resumen                                                                                               2
+
+2. Propuesta realizada                                                                                   2
+
+3. Avances principales                                                                                   2
+   3.1. Módulo de control de partida (ComRobot.py) . . . . . . . . . . . . . . . . . . . . . .           2
+   3.2. Módulo de visión (VisionRobot.py) . . . . . . . . . . . . . . . . . . . . . . . . . . .          3
+   3.3. Módulo de utilidades del robot (Ned2_ULL.py) . . . . . . . . . . . . . . . . . . . . . .         3
+   3.4. Bloques Simulink (SimulinkReceptor.m, SimulinkEmisor.m) . . . . . . . . . . . . .                3
+   3.5. Algoritmo de inteligencia artificial . . . . . . . . . . . . . . . . . . . . . . . . . . . .     3
+
+4. Decisiones de diseño y justificación                                                                  3
+   4.1. Protocolo TCP/IP de texto plano . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        3
+   4.2. Diferenciación de lógica . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     4
+   4.3. Gestión de tiempos de movimiento . . . . . . . . . . . . . . . . . . . . . . . . . . . .         4
+   4.4. Convención de nombres de poses . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         4
+   4.5. Aleatoriedad en el modo automático . . . . . . . . . . . . . . . . . . . . . . . . . . .         4
+   4.6. Síntesis de voz . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    4
+
+5. Componentes hardware del robot Ned-2                                                                  4
+   5.1. Características mecánicas . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      5
+   5.2. Sistema de accionamiento . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       5
+   5.3. Unidad de computación . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        5
+   5.4. Sistema de visión . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    5
+   5.5. Herramientas y efector final . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     6
+   5.6. API de programación . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      6
+
+6. Formato general de mensajes                                                                           6
+   6.1. Estructura . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   6
+   6.2. Codificación de posiciones . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     6
+   6.3. Tipos de dato de los argumentos . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        7
+
+7. Mensajes PC central → Robot                                                                           7
+
+8. Mensajes Robot → PC central                                                                           7
+   8.1. Secuencia de mensajes en una partida completa . . . . . . . . . . . . . . . . . . . . .          8
+   8.2. Integración con Simulink (SimulinkReceptor / SimulinkEmisor) . . . . . . . . . . .               9
+
+9. Verificación de requisitos del subsistema                                                              9
+   9.1. Piezas en reserva . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     9
+   9.2. Movimientos suaves . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     10
+   9.3. Control remoto y mensajería . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      10
+   9.4. Posición de espera . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     10
+   9.5. Tipo y color de piezas por jugador . . . . . . . . . . . . . . . . . . . . . . . . . . . .       11
+   9.6. Verificación de victoria por turno . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     11
+   9.7. Máximo número de turnos . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        12
+   9.8. Mensajería TCP/IP con terminador . . . . . . . . . . . . . . . . . . . . . . . . . . .           12
+
+
+                                                    1
+Documento técnico                                               Programación del robot y comunicación
+
+
+1.     Resumen
+Este documento describe el sistema software desarrollado para que el robot colaborativo Niryo
+Ned-2 dispute partidas de tres en raya contra un jugador humano.
+El sistema integra cuatro módulos funcionales: (1) control de movimiento del robot mediante la API
+pyniryo, (2) visión artificial para detectar las fichas del rival mediante la cámara integrada, (3) un
+algoritmo de inteligencia artificial basado en minimax para el modo de juego autónomo, y (4) un
+protocolo de comunicación TCP/IP con texto plano para coordinarse con un PC central que actúa
+de árbitro e interfaz de usuario.
+El trabajo se ha estructurado en tres archivos Python principales (ComRobot.py, VisionRobot.py,
+Ned2_ULL.py) y dos funciones MATLAB (SimulinkReceptor.m, SimulinkEmisor.m) que se inte-
+gran como bloques MATLAB Function en un modelo Simulink del PC central.
+
+
+2.     Propuesta realizada
+El objetivo del proyecto es construir un sistema de 3 en raya físico en el que el robot Ned-2 mueve
+sus propias fichas sobre un tablero y detecta las posiciones de los oponentes mediante visión por
+computador.
+
+Requisitos funcionales
+       El robot debe verificar condiciones de victoria propias (lógica interna) y del rival (visión
+       artificial) al término de cada turno.
+       El resultado final se comunica al PC central con el mensaje FIN VIC, FIN DER o FIN EMP.
+       Se establece el máximo número de turnos en 30.
+
+Requisitos de comunicación
+       La comunicación se realiza mediante TCP/IP con mensajes de texto plano terminados en
+       \n.
+
+
+3.     Avances principales
+3.1.    Módulo de control de partida (ComRobot.py)
+Constituye el núcleo del sistema. Implementa el bucle principal de la partida, la máquina de estados
+del juego y la coordinación entre la capa de movimiento, la capa de visión y la capa de comunicación.
+       Gestión completa del ciclo de turnos hasta un máximo configurable (MAX_TURNOS = 30).
+       Soporte para los modos MAN y AUT con la misma arquitectura de bucle.
+       Mensajes de voz en tiempo real mediante robot.say() con síntesis de voz (audio mandarín
+       con texto en español).
+       Detección de empate por agotamiento de turnos además de victoria/derrota.
+
+
+
+
+                                                  2
+Documento técnico                                              Programación del robot y comunicación
+
+
+3.2.    Módulo de visión (VisionRobot.py)
+Procesa las imágenes capturadas por la cámara integrada del robot para detectar fichas de color
+azul sobre el tablero.
+       Corrección de perspectiva mediante extracción del workspace con los marcadores Niryo.
+       Segmentación por umbral HSV configurable.
+       División de la imagen en cuadrícula 3×3 y cálculo del centroide de cada contorno para asignar
+       la casilla correspondiente.
+       La función devuelve la lista de casillas ocupadas (1–9, con la numeración del protocolo).
+
+3.3.    Módulo de utilidades del robot (Ned2_ULL.py)
+       calibration_hsv(): herramienta interactiva de calibración de rangos HSV mediante trackbars
+       de OpenCV.
+
+3.4.    Bloques Simulink (SimulinkReceptor.m, SimulinkEmisor.m)
+Implementados como funciones MATLAB compatibles con el bloque MATLAB Function de Simu-
+link:
+       SimulinkReceptor: acumula los bytes recibidos del bloque TCP/IP Receive en un buffer
+       persistente, parsea los mensajes del protocolo y expone señales discretas DEC, p1..p3, FTJ,
+       FTU, FIN, RES.
+       SimulinkEmisor: formatea los comandos INI y MOV en vectores uint8 de tamaño fijo para
+       conectar directamente al bloque TCP/IP Send. Detecta flanco ascendente de sendmsg para
+       evitar envíos repetidos.
+
+3.5.    Algoritmo de inteligencia artificial
+Se ha implementado un algoritmo minimax con dos variantes:
+       Fase de colocación (menos de 3 fichas propias en tablero): profundidad máxima 6, 20 % de
+       aleatoriedad para dificultad media.
+       Fase de movimiento (3 fichas propias en tablero): profundidad máxima 4, 15 % de aleato-
+       riedad.
+La función de utilidad devuelve +10 − prof en victoria y prof − 10 en derrota, penalizando con la
+profundidad para preferir jugadas rápidas.
+
+
+4.     Decisiones de diseño y justificación
+4.1.    Protocolo TCP/IP de texto plano
+Se ha optado por mensajes ASCII terminados en \n en lugar de un protocolo binario para facilitar
+la depuración (los mensajes son legibles directamente en cualquier terminal) y la interoperabilidad
+entre Python (socket) y MATLAB (TCP/IP Send/Receive).
+
+
+
+
+                                                  3
+Documento técnico                                               Programación del robot y comunicación
+
+
+4.2.    Diferenciación de lógica
+La verificación de victoria del robot se realiza mediante lógica interna: la lista de posiciones se
+actualiza tras cada movimiento comandado, sin necesidad de cámara. La verificación del rival se
+realiza exclusivamente mediante visión artificial, ya que el robot no recibe información explícita
+sobre los movimientos del contrario: los infiere de la imagen.
+Esta decisión desacopla ambas fuentes y evita inconsistencias derivadas de errores de visión en las
+fichas propias del robot (cuya posición se conoce con precisión por la lógica interna).
+
+4.3.    Gestión de tiempos de movimiento
+Para garantizar que el robot llega a cada posición antes de ejecutar la siguiente acción se aplican
+las siguientes esperas:
+       2 segundos tras cada llamada a robot.move().
+       1 segundo tras cada operación de pinza (grasp_with_tool(), release_with_tool()).
+No se usa un sistema de realimentación de posición por limitación de la API disponible; las esperas
+fijas garantizan la seguridad de la operación bajo condiciones normales.
+
+4.4.    Convención de nombres de poses
+Existe una distinción entre el identificador de comunicación (números 1–9 y cadenas alm1–alm3)
+y el nombre de pose guardado en el robot (pos1–pos9 y alm1–alm3). La función nombre_pose()
+realiza la traducción, centralizando la correspondencia en un único punto del código.
+Se mantiene una segunda capa de poses de aproximación (aprox1–aprox9 y aproxalm) situadas
+sobre cada posición de tablero o almacén, desde las que el robot desciende verticalmente para recoger
+o depositar fichas.
+
+4.5.    Aleatoriedad en el modo automático
+El algoritmo minimax puro jugaría de forma óptima, lo que lo haría muy difícil de vencer. Para
+obtener una dificultad media adecuada para una demostración, se introduce un 20 % de aleatoriedad
+en la fase de colocación y un 15 % en la fase de movimiento: con esa probabilidad se elige una casilla
+aleatoria en lugar de la óptima.
+
+4.6.    Síntesis de voz
+Los mensajes de voz usan el motor gTTS disponible en la API pyniryo con audio de mandarín
+(language=3) pero texto en español después de las pruebas realizadas con los distintos audios.
+
+
+5.     Componentes hardware del robot Ned-2
+El Niryo Ned-2 es un robot colaborativo de 6 grados de libertad diseñado para entornos educativos
+e industriales ligeros, fabricado por la empresa francesa Niryo SAS.
+
+
+
+
+                                                  4
+Documento técnico                                            Programación del robot y comunicación
+
+
+5.1.    Características mecánicas
+
+Parámetro             Valor
+
+Grados de libertad    6 (articulaciones rotacionales)
+Alcance máximo        440 mm
+Carga útil máxima     300 g
+Repetibilidad         ±0,5 mm
+Peso del robot        ≈8 kg (sin base)
+Material              Plástico PLA/ABS impreso en 3D + aluminio anodizado
+Espacio de trabajo    Esfera parcial de radio 440 mm
+
+                      Cuadro 1: Especificaciones mecánicas del Niryo Ned-2.
+
+
+5.2.    Sistema de accionamiento
+Las seis articulaciones utilizan una combinación de actuadores:
+       Articulaciones 1–3: motores paso a paso con encoders y reductoras de alta relación de
+       reducción para mayor par.
+       Articulaciones 4–6: servomotores Dynamixel XL430 y XL320 con comunicación serie UART.
+
+5.3.    Unidad de computación
+
+Componente             Descripción
+
+Ordenador principal    Raspberry Pi 4 Model B (4 GB RAM)
+Microcontrolador       STM32 (gestión de bajo nivel de motores y E/S)
+Sistema operativo      Ubuntu 20.04 LTS + ROS Noetic
+Conectividad           Ethernet Gigabit, Wi-Fi 802.11ac, Bluetooth 5.0
+
+                        Cuadro 2: Unidad de computación del Niryo Ned-2.
+
+
+5.4.    Sistema de visión
+El robot integra una cámara RGB montada en la muñeca (eje 6):
+       Resolución: 640×480 píxeles.
+       Conexión USB interna al Raspberry Pi.
+       Compatible con los módulos de visión de pyniryo (image_functions).
+       Permite el uso de marcadores de workspace para corrección de perspectiva.
+
+
+
+
+                                                  5
+Documento técnico                                              Programación del robot y comunicación
+
+
+5.5.    Herramientas y efector final
+El Ned-2 dispone de un sistema de herramientas intercambiable mediante conector magnético:
+       Pinza de dedos: accionada por un servomotor Dynamixel; es la herramienta utilizada en
+       este proyecto para agarrar y soltar fichas.
+       Ventosa neumática (no utilizada en este proyecto).
+       Bolígrafo electromagnético (no utilizado en este proyecto).
+
+5.6.    API de programación
+La comunicación entre el software de usuario y el robot se realiza mediante la librería pyniryo
+(Python 3), que envuelve el servidor ROS del robot. La conexión se establece por TCP/IP (puerto
+9090, protocolo rosbridge).
+
+
+6.     Formato general de mensajes
+6.1.    Estructura
+Todos los mensajes del protocolo siguen esta estructura:
+       Identificador: cadena de exactamente 3 letras mayúsculas que define el tipo de mensaje.
+       Argumentos: uno o más parámetros separados por espacios, según el identificador.
+       Terminador: cada mensaje finaliza con \n (LF, 0x0A) o \r\n (CRLF). El parser ignora
+       líneas vacías.
+Formato genérico:
+                                       IDN arg1 arg2 ... \n
+
+6.2.    Codificación de posiciones
+Las posiciones se representan por enteros. Las 9 casillas del tablero se numeran de izquierda a
+derecha y de arriba a abajo. El almacén se referencia como alm1, alm2 y alm3 en el protocolo
+interno Python, y como los valores 11, 12 y 13 en el protocolo MATLAB/Simulink.
+
+                                      1     2     3
+
+                                      4     5     6    11/12/13
+
+                                      7     8     9    Almacén
+
+
+                                          Robot
+
+
+Figura 1: Numeración de posiciones del tablero y representación del almacén (11/12/13 en Simulink;
+alm1..alm3 en Python).
+
+
+
+
+                                                  6
+Documento técnico                                              Programación del robot y comunicación
+
+
+6.3.   Tipos de dato de los argumentos
+
+                     Argumento       Tipo      Valores posibles
+
+                     modo            Cadena    MAN, AUT, COM
+                     origen          Cadena    alm1, alm2, alm3, 1 – 9
+                     destino         Entero    1–9
+                     pN              Entero    0–9    (0 = ficha no colocada)
+                     res             Cadena    VIC, DER, EMP
+
+                    Cuadro 3: Tipos y valores de los argumentos del protocolo.
+
+
+7.     Mensajes PC central → Robot
+El PC central inicia la comunicación y envía órdenes al robot. Los mensajes disponibles son los
+siguientes.
+
+Mensaje             Formato y contenido
+
+INI modo            Inicio de partida. modo indica el modo de juego:
+                      MAN — modo manual: el PC central enviará comandos MOV para cada jugada
+                      del robot.
+                      AUT — modo automático: el robot decide sus jugadas con el algoritmo
+                      minimax.
+                      COM — reservado para uso futuro.
+                    El robot queda en espera de INI al arrancar. Solo se acepta si el modo es MAN o
+                    AUT.
+
+MOV origen          Orden de movimiento de una ficha. Solo aplicable en modo MAN.
+destino                origen: casilla actual de la ficha. Puede ser alm1, alm2, alm3 (almacén) o un
+                       número del 1 al 9 (tablero).
+                       destino: casilla destino en el tablero (1–9).
+                    Al recibir este mensaje el robot ejecuta la secuencia física de pick-and-place y
+                    al terminar notifica FTJ.
+
+
+                     Cuadro 4: Mensajes enviados por el PC central al robot.
+
+
+8.     Mensajes Robot → PC central
+El robot envía mensajes para notificar eventos al PC central. Los mensajes disponibles son los
+siguientes.
+
+
+
+
+                                                 7
+Documento técnico                                            Programación del robot y comunicación
+
+
+
+Mensaje             Formato y contenido
+
+DEC                 Decisión tomada. Enviado exclusivamente en modo AUT, inmediatamente
+                    después de que el algoritmo haya calculado la jugada y antes de ejecutar el
+                    movimiento físico. Permite al PC central saber que el robot ya ha decidido y
+                    va a actuar.
+
+ACT p1 p2 p3        Actualización del estado visual. Enviado al término de cada turno del rival,
+                    tras capturar la imagen con la cámara y detectar las fichas mediante visión.
+                       p1, p2, p3: posiciones en el tablero (1–9) de cada ficha detectada.
+                       Valor 0: la ficha correspondiente no ha sido colocada todavía en el tablero.
+                    Este mensaje permite al PC central mantener actualizado el estado visual de
+                    la partida y la pantalla de juego.
+
+FTJ                 Fin de turno del robot. Enviado inmediatamente después de completar el
+                    movimiento físico de la ficha del robot. Indica al PC central que puede
+                    habilitar el turno del jugador humano.
+
+FTU                 Fin de turno del usuario humano. Enviado tras detectar por visión el estado
+                    del tablero rival y transmitir ACT. Permite al PC central cerrar el ciclo de
+                    turno del jugador y habilitar la siguiente decisión del robot.
+
+FIN res             Fin de partida. Enviado cuando se detecta una condición de victoria, derrota
+                    o empate.
+                      VIC — el robot ha ganado (tres en raya del robot detectado por lógica
+                      interna).
+                      DER — el robot ha perdido (tres en raya del rival detectado por visión).
+                      EMP — empate por agotamiento del límite de turnos.
+
+
+                    Cuadro 5: Mensajes enviados por el robot al PC central.
+
+
+8.1.   Secuencia de mensajes en una partida completa
+A continuación se muestra la secuencia de mensajes de una partida tipo con dos turnos en modo
+automático:
+
+
+
+
+                                               8
+Documento técnico                                              Programación del robot y comunicación
+
+
+
+                Dirección       Mensaje      Evento
+
+                PC → Robot      INI AUT      Inicio de partida en modo automático
+                Robot → PC      DEC          Algoritmo ha calculado jugada
+                Robot → PC      FTJ          Robot terminó su movimiento
+                (rival mueve)   —            Turno físico del rival
+                Robot → PC      ACT 3 0 0    Rival colocó ficha en casilla 3
+                Robot → PC      FTU          Fin del turno del usuario
+                Robot → PC      DEC          Algoritmo ha calculado jugada
+                Robot → PC      FTJ          Robot terminó su movimiento
+                (rival mueve)   —            Turno físico del rival
+                Robot → PC      ACT 3 7 0    Rival colocó segunda ficha en casilla 7
+                Robot → PC       FTU         Fin del turno del usuario
+                ..              ..           ..
+                 .               .            .
+                Robot → PC      FIN VIC      El robot ha ganado
+
+
+8.2.    Integración con Simulink (SimulinkReceptor / SimulinkEmisor)
+Los bloques MATLAB Function traducen entre las señales Simulink y el protocolo de texto:
+       SimulinkReceptor conecta la salida data del bloque TCP/IP Receive y expone señales
+       booleanas/enteras para DEC, p1..p3, FTJ, FTU y RES. Las señales de pulso (DEC, FTJ, FTU,
+       FIN) valen 1 solo en el ciclo de simulación en que se recibe el mensaje.
+       SimulinkEmisor recibe las entradas sendmsg, modo, origen y destino y produce un vector
+       uint8 de longitud fija (BUF_SIZE) para la entrada data del bloque TCP/IP Send. El mensaje
+       se envía solo en el ciclo de flanco ascendente de sendmsg para evitar duplicados.
+
+                 Mensaje generado           Argumentos usados
+
+                 INI modo\n                 modo (1=MAN, 2=AUT, 3=COM)
+                 MOV origen destino\n       origen (1–9, 11–13), destino (1–9)
+
+                            Cuadro 6: Codificación del emisor Simulink.
+
+
+9.     Verificación de requisitos del subsistema
+9.1.    Piezas en reserva
+RqId: [000C-006]
+
+Al comienzo de la partida habrá 3 piezas apiladas verticalmente en una posición fija y predefinida
+al lado del tablero para cada jugador.
+Verificación: Se define una posición fija para las pilas y se programa el robot para acceder a ellas.
+Se comprueba antes de la partida que hay 3 piezas apiladas en dicha posición.
+
+                                                 9
+Documento técnico                                              Programación del robot y comunicación
+
+
+Resultado: Las coordenadas del almacén están definidas como constantes en Ned2_ULL.py (alm1,
+alm2, alm3). Se verifica físicamente la presencia de 3 piezas antes de iniciar la partida.
+
+
+
+
+           Figura 2: Piezas apiladas en la zona de reserva antes del inicio de la partida.
+
+
+9.2.   Movimientos suaves
+RqId: [000C-030]
+
+Todos los movimientos que realiza el robot serán suaves y evitarán altas velocidades. Se programarán
+límites de velocidad máxima para cada articulación del robot.
+Verificación: Se programan límites de velocidad máxima para cada articulación, garantizando por
+construcción que los movimientos sean suaves.
+Resultado: La línea de código utilizada en la inicialización es robot.set_arm_max_velocity(50).
+
+9.3.   Control remoto y mensajería
+RqId: [000C-025]
+
+El PC central permitirá el control remoto del robot gestionando el envío y recepción de mensajes
+con el robot.
+Verificación: La máquina de estados se programa para gestionar el envío y recepción de mensajes
+con el robot, implementando el control remoto por construcción.
+Resultado: Los bloques SimulinkEmisor y SimulinkReceptor integrados en Simulink gestionan
+la mensajería TCP/IP de forma completa. Se ha verificado el intercambio de mensajes durante
+partidas de prueba.
+
+9.4.   Posición de espera
+RqId: [000C-021]
+
+
+
+                                                 10
+Documento técnico                                              Programación del robot y comunicación
+
+
+Una vez finalizado el movimiento, el robot debe volver a una posición de espera.
+Verificación: Se programa una posición de espera definida a la que el robot vuelve automáticamente
+al finalizar cada movimiento.
+Resultado: Al término de cada secuencia de pick-and-place, ComRobot.py mueve el robot a la
+posición de espera predefinida antes de emitir FTJ. Se ha verificado en pruebas de partida completa.
+
+
+
+
+               Figura 3: Posición de espera del robot tras finalizar un movimiento.
+
+
+9.5.   Tipo y color de piezas por jugador
+RqId: [000C-035]
+
+El Jug/Ord utilizará círculos verdes y el Riv utilizará cuadrados azules como piezas para el juego.
+Verificación: Se programa el sistema de visión para reconocer círculos verdes (Jug/Ord) y cuadra-
+dos azules (Riv). Se verifica tomando una foto de la zona de juego antes de la partida.
+Resultado: La distinción de formas y colores se ha verificado mediante la herramienta calibration_hsv()
+antes del inicio de las partidas de prueba.
+
+
+
+
+                    Figura 4: Piezas detectadas por tipo y color para cada jugador
+
+
+9.6.   Verificación de victoria por turno
+RqId: [000C-036]
+
+Al término de cada turno, el sistema verificará las condiciones de victoria propias (lógica interna)
+
+                                                 11
+Documento técnico                                               Programación del robot y comunicación
+
+
+y del Riv (visión artificial). El resultado final se comunicará al PC central con el mensaje FIN_VIC,
+FIN_DER o FIN_EMP.
+Verificación: Se verifican jugadas ganadoras por parte de ambos participantes y se comprueba que
+el sistema detecta la victoria y emite el mensaje correspondiente (FIN VIC, FIN DER o FIN EMP).
+Resultado: ComRobot.py evalúa tras cada turno las condiciones de victoria mediante lógica interna
+(robot) y visión artificial (rival) y emite el mensaje FIN con el resultado correspondiente. Se han
+verificado los tres casos en pruebas controladas.
+
+
+
+
+            Figura 5: Verificación de victoria por turno durante una partida de prueba.
+
+
+9.7.   Máximo número de turnos
+RqId: [000C-037]
+
+Se establece un máximo de 30 turnos por partida. Si se alcanza este límite sin que ningún participante
+haya ganado, la partida se resuelve como empate.
+Verificación: Se juega una partida que alcanza 30 turnos y se verifica que el sistema la resuelve
+como empate.
+Resultado: La constante MAX_TURNOS = 30 controla el límite en ComRobot.py. Al alcanzarlo sin
+ganador, el sistema emite FIN EMP. Se ha verificado el comportamiento en una partida de prueba
+que alcanzó el límite.
+
+
+
+
+   Figura 6: Evidencias de la verificación del máximo número de turnos en partida de prueba.
+
+
+9.8.   Mensajería TCP/IP con terminador
+RqId: [000C-038]
+
+La comunicación entre el PC central y el robot se realizará mediante TCP/IP con mensajes de
+texto plano terminados en \n.
+Verificación: Se programa el protocolo con mensajes TCP/IP de texto plano terminados en \n. Se
+verifica comprobando el formato de los mensajes intercambiados.
+Resultado: Todos los mensajes generados por ComRobot.py y SimulinkEmisor incluyen el termi-
+nador \n. El receptor en ambos extremos parsea por dicho delimitador. Se ha verificado el formato
+mediante inspección de los mensajes en pruebas de comunicación.
+
+
+                                                 12
+Documento técnico                                            Programación del robot y comunicación
+
+
+
+
+           Figura 7: Verificación del protocolo TCP/IP con terminador de fin de línea.
+
+
+
+
+                                               13
+
