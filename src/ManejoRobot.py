@@ -1,6 +1,7 @@
 from pyniryo import NiryoRobot
-from Ned2_ULL import backup_robot_pose, restore_robot_pose, create_robot_pose, calibration
+from Ned2_ULL import backup_robot_pose, restore_robot_pose, create_robot_pose, calibration_hsv
 from VisionRobot import procesar_tablero_3x3_azules
+from pathlib import Path
 
 robot = NiryoRobot('10.10.10.10')
 
@@ -11,7 +12,7 @@ robot.update_tool()
 # Seleccionar velocidad del robot
 robot.set_arm_max_velocity(50)
 
-backup_file = "posbackup.json"
+backup_file = Path(__file__).resolve().parent.parent / "config" / "posbackup.json"
 
 # Restaurar poses guardadas si existe el backup
 try:
@@ -22,7 +23,7 @@ except FileNotFoundError:
 
 # Variable para rastrear la última posición del robot
 posicion_actual = "home"
-robot.say("Hola Ruben", 3)
+#robot.say("Hola Ruben", 3)
 
 print("\nPrograma para manejar el robot.")
 print("Opciones disponibles:")
@@ -83,7 +84,7 @@ while True:
 
     elif option == "4":
         print("\nIniciando calibración HSV...")
-        calibration_data = calibration(robot)
+        calibration_data = calibration_hsv(robot)
         print(f"Calibración final: {calibration_data}")
 
     elif option == "5":

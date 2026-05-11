@@ -13,7 +13,7 @@ BACKUP_FILE = Path(__file__).resolve().parent.parent / "config" / "posbackup.jso
 HOST = "10.209.2.130"
 PORT = 5000
 
-HOST2 = "10.209.2.72"
+HOST2 = "10.209.2.167"
 PORT2 = 6000
 
 # ─── Constantes del juego ─────────────────────────────────────
@@ -43,8 +43,7 @@ def recibir_mensaje(sock: socket.socket) -> str:
         print("[RX] Conexión cerrada.")
         return ""
     mensaje = data.decode("utf-8")
-    if not mensaje.strip().startswith("MOV"):
-        print(f"[RX] '{mensaje.strip()}'")
+    print(f"[RX] '{mensaje.strip()}'")
     return mensaje
 
 
@@ -53,11 +52,16 @@ def recibir_mensaje(sock: socket.socket) -> str:
 def escuchar_sock2(sock2):
     while True:
         try:
-            msg = recibir_mensaje(sock2)
-            if not msg:
+            data = sock2.recv(1024)
+            if not data:
+                print("[SOCK2] Conexión cerrada.")
                 break
-            print(f"[SOCK2 RX] {msg.strip()}")
-        except:
+
+            mensaje = data.decode("utf-8")
+            print(f"[SOCK2 RX RAW] '{mensaje.strip()}'")
+
+        except Exception as e:
+            print(f"[SOCK2 ERROR] {e}")
             break
 
 
@@ -233,12 +237,10 @@ def main():
     restore_robot_pose(robot, BACKUP_FILE)
     robot.move(robot.get_pose_saved("vista_gen"))
 
-    # conexión principal
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((HOST, PORT))
     print("Conectado a servidor principal")
 
-    # segunda conexión
     sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock2.connect((HOST2, PORT2))

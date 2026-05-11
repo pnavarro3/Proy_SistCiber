@@ -1,22 +1,38 @@
-function [DEC, p1, p2, p3, FTU, FIN, RES] = SimulinkReceptor(data, count)
+function [DEC, FTU, FTJ, FIN, RES, tablero] = SimulinkReceptor(data, count, Ts)
 % Parsea mensajes TCP/IP recibidos del robot Ned2.
-% Entradas: data (uint8) y count (double) del bloque TCP/IP Receive.
-% Mensajes: DEC | ACT p1 p2 p3 | FTU | FIN VIC|DER|EMP
+% Entradas: data (uint8), count (double) del bloque TCP/IP Receive,
+%           Ts (double) periodo de muestreo del bloque (s).
+% 
+% Mensajes soportados:
+%   - DEC: decisión de la IA tomada
+%   - ACT _X_OX_O__: estado completo del tablero (9 caracteres)
+%   - FTU: fin de turno del usuario/rival
+%   - FTJ: fin de turno del robot
+%   - FIN VIC/DER/EMP: fin de partida (victoria/derrota/empate)
 %
-% Reescrito sin sub-funciones para compatibilidad total con
-% el generador de código de Simulink MATLAB Function.
+% Salidas:
+%   DEC, FTU, FTJ, FIN: pulsos (1 durante 100ms)
+%   RES: resultado final (1=victoria, 2=derrota, 3=empate)
+%   tablero: vector 1x9 double (0=vacío, 1=rival, 2=propio)
 
-persistent rx_buffer last_p1 last_p2 last_p3;
+persistent rx_buffer dec_cnt ftu_cnt ftj_cnt tablero_mem initialized;
 coder.varsize('rx_buffer', [1, 2048], [0, 1]);
-if isempty(rx_buffer)
-    rx_buffer = char(zeros(1, 0));
-    last_p1   = 0.0;
-    last_p2   = 0.0;
-    last_p3   = 0.0;
+
+if isempty(initialized)
+    initialized   = true;
+    rx_buffer     = char(zeros(1, 0));
+    dec_cnt       = 0.0;
+    ftu_cnt       = 0.0;
+    ftj_cnt       = 0.0;
+    tablero_mem   = zeros(1, 9);  % 0=vacío, 1=rival, 2=propio
 end
 
+PULSE_SAMPLES = max(1.0, round(0.1 / Ts));   % 100 ms en muestras
+
+% Inicializar salidas
 DEC = 0.0;
 FTU = 0.0;
+FTJ = 0.0;
 FIN = 0.0;
 RES = 0.0;
 
@@ -61,7 +77,7 @@ for iter = 1:256                        %#ok<FORPF>
         cmd   = upper(linea);
         resto = char(zeros(1, 0));
     else
-        sp1 = sp_arr(1);                % escalar
+        sp1 = sp_arr(1);
         cmd = upper(linea(1 : sp1-1));
         if sp1 < numel(linea)
             resto = linea(sp1+1 : end);
@@ -71,39 +87,32 @@ for iter = 1:256                        %#ok<FORPF>
     end
 
     % ── Decodificar mensaje ──────────────────────────────────
-    if strcmp(cmd, 'DEC')
-        DEC = 1.0;
-
-    elseif strcmp(cmd, 'ACT')
-        % Parsear "p1 p2 p3" directamente con índices fijos.
-        % Formato esperado: dígitos separados por espacios, ej. "1 5 9"
-        nums = [0.0, 0.0, 0.0];
-        ni   = 1;                       % índice del número actual (1..3)
-        val  = 0.0;
-        enNum = false;
-        for ci = 1:numel(resto)
-            ch = resto(ci);
-            if ch >= '0' && ch <= '9'
-                val   = val * 10.0 + (double(ch) - 48.0);
-                enNum = true;
-            else
-                if enNum && ni <= 3
-                    nums(ni) = val;
-                    ni  = ni + 1;
-                    val = 0.0;
-                    enNum = false;
+    % Procesar ACT (mensaje con estado completo del tablero)
+    if strcmp(cmd, 'ACT')
+        % Formato: ACT _X_OX_O__ (9 caracteres, row-major)
+        % '_' = vacío, 'X' = rival, 'O' = propio
+        tablero_str = strtrim(resto);
+        if length(tablero_str) >= 9
+            for k = 1:9
+                ch = tablero_str(k);
+                if ch == 'X'
+                    tablero_mem(k) = 2.0;  % rival
+                elseif ch == 'O'
+                    tablero_mem(k) = 1.0;  % propio
+                else
+                    tablero_mem(k) = 0.0;  % vacío
                 end
             end
         end
-        if enNum && ni <= 3
-            nums(ni) = val;
-        end
-        last_p1 = nums(1);
-        last_p2 = nums(2);
-        last_p3 = nums(3);
+
+    elseif strcmp(cmd, 'DEC')
+        dec_cnt = PULSE_SAMPLES;
 
     elseif strcmp(cmd, 'FTU')
-        FTU = 1.0;
+        ftu_cnt = PULSE_SAMPLES;
+
+    elseif strcmp(cmd, 'FTJ')
+        ftj_cnt = PULSE_SAMPLES;
 
     elseif strcmp(cmd, 'FIN')
         FIN = 1.0;
@@ -118,6 +127,22 @@ for iter = 1:256                        %#ok<FORPF>
     end
 end
 
-p1 = last_p1;
-p2 = last_p2;
-p3 = last_p3;
+% ── Actualizar contadores de pulso (mantener salida a 1 durante 100 ms)
+if dec_cnt > 0
+    DEC = 1.0;
+    dec_cnt = dec_cnt - 1.0;
+end
+
+if ftu_cnt > 0
+    FTU = 1.0;
+    ftu_cnt = ftu_cnt - 1.0;
+end
+
+if ftj_cnt > 0
+    FTJ = 1.0;
+    ftj_cnt = ftj_cnt - 1.0;
+end
+
+% ── Asignar salidas
+tablero = tablero_mem;
+end

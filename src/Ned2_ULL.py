@@ -2,10 +2,23 @@ from pyniryo import *
 import cv2
 import numpy as np
 import json
+from pathlib import Path
 
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+CONFIG_DIR = PROJECT_ROOT / "config"
 
-def backup_robot_pose(robot, filename="saved_poses.json"):
+
+def _resolve_pose_file(filename):
+    path = Path(filename)
+    if path.is_absolute():
+        return path
+    if len(path.parts) == 1:
+        return CONFIG_DIR / path.name
+    return PROJECT_ROOT / path
+
+
+def backup_robot_pose(robot, filename="posbackup.json"):
     # Get all saved poses
     saved_poses = robot.get_saved_pose_list()  # This returns a list of PoseObjects
 
@@ -31,14 +44,17 @@ def backup_robot_pose(robot, filename="saved_poses.json"):
         poses_data.append(pose_data)
 
     # Save the poses data to a JSON file
-    with open(filename, "w") as f:
+    target_file = _resolve_pose_file(filename)
+    target_file.parent.mkdir(parents=True, exist_ok=True)
+    with target_file.open("w", encoding="utf-8") as f:
         json.dump(poses_data, f, indent=4)
 
-    print(f"All saved poses have been saved to {filename}")
+    print(f"All saved poses have been saved to {target_file}")
 
-def restore_robot_pose(robot, filename="saved_poses.json"):
+def restore_robot_pose(robot, filename="posbackup.json"):
     # Load the JSON file containing saved poses
-    with open(filename, "r") as f:
+    source_file = _resolve_pose_file(filename)
+    with source_file.open("r", encoding="utf-8") as f:
         poses_data = json.load(f)
 
     # Iterate through the poses and save them to the robot

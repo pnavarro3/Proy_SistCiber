@@ -1,18 +1,20 @@
 """
 PruebaComTCPIP.py
 -----------------
-Conecta a Simulink por TCP/IP, envia bytes uint8 y cierra la conexion.
+Conecta a Simulink por TCP/IP, envia y recibe bytes uint8.
 """
 
 import socket
-HOST = "10.209.2.100"   # IP de Simulink
-PORT = 1000           # Puerto del bloque TCP/IP Receive de Simulink
+import threading
+
+HOST = "10.209.2.65"   # IP de Simulink
+PORT = 5000            # Puerto del bloque TCP/IP de Simulink
+
+BUFFER_SIZE = 1024     # Tamaño máximo del buffer de recepción
+
 
 def enviar_3_bytes_utf8(sock: socket.socket, texto: str) -> None:
-    """Envia exactamente 3 bytes por el socket usando codificacion UTF-8.
-    - Si la representacion UTF-8 tiene menos de 3 bytes, se rellena con \x00.
-    - Si tiene mas de 3 bytes, se trunca a 3 bytes.
-    """
+    """Envia exactamente 3 bytes por el socket usando codificacion UTF-8."""
     b = texto.encode("utf-8")
     if len(b) < 3:
         b = b + (b"\x00" * (3 - len(b)))
@@ -24,43 +26,92 @@ def enviar_3_bytes_utf8(sock: socket.socket, texto: str) -> None:
 
 def enviar_bytes(sock: socket.socket, vals) -> None:
     """Enviar una lista de bytes (enteros 0-255). Se ajusta a exactamente 3 bytes."""
-    # convertir a lista de enteros
     bytes_list = [int(x) for x in vals]
-    # normalizar a 3 bytes
     if len(bytes_list) < 3:
         bytes_list = bytes_list + [0] * (3 - len(bytes_list))
     elif len(bytes_list) > 3:
         bytes_list = bytes_list[:3]
     for b in bytes_list:
-        if not (0 <= b <= 255):
-            raise ValueError(f"Byte fuera de rango: {b}")
-    sock.sendall(bytes(bytes_list))
-    print("  Enviado:", " ".join(f"0x{b:02X}" for b in bytes_list))
+        if b < 0 or b > 255:
+            raise ValueError(f"Valor fuera de rango uint8: {b}")
+    data = bytes(bytes_list)
+    sock.sendall(data)
+    print("  Enviado:", " ".join(f"0x{byte:02X}" for byte in data))
+
+
+def recibir_mensajes(sock: socket.socket, parar_evento: threading.Event = None) -> None:
+    """Recibe mensajes continuamente por TCP/IP y los muestra por consola.
+    Se detiene cuando se cierra la conexión o se activa parar_evento.
+    """
+    print(f"[RX] Escuchando mensajes en {HOST}:{PORT} ...")
+    while True:
+        if parar_evento and parar_evento.is_set():
+            break
+        try:
+            data = sock.recv(BUFFER_SIZE)
+            if not data:
+                print("[RX] Conexión cerrada por el remoto.")
+                break
+            # Mostrar como hex
+            hex_str = " ".join(f"0x{b:02X}" for b in data)
+            # Mostrar como enteros
+            int_str = ", ".join(str(b) for b in data)
+            # Intentar mostrar como texto
+            try:
+                texto = data.decode("utf-8", errors="replace")
+            except Exception:
+                texto = ""
+            print(f"  [RX] {len(data)} bytes | HEX: {hex_str} | INT: {int_str} | TXT: '{texto}'")
+        except socket.timeout:
+            continue
+        except OSError as e:
+            print(f"[RX] Error de socket: {e}")
+            break
+
+
+def main():
+    print(f"Conectando a {HOST}:{PORT} ...")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.connect((HOST, PORT))
+        sock.settimeout(1.0)  # timeout de 1s para poder comprobar parada
+        print("Conexión establecida.\n")
+
+        parar = threading.Event()
+
+        # Hilo de recepción en segundo plano
+        hilo_rx = threading.Thread(target=recibir_mensajes, args=(sock, parar), daemon=True)
+        hilo_rx.start()
+
+        print("Comandos:")
+        print("  t <texto>       -> Enviar 3 bytes UTF-8")
+        print("  b <n1> <n2> ... -> Enviar bytes (enteros 0-255)")
+        print("  q               -> Salir\n")
+
+        try:
+            while True:
+                entrada = input(">> ").strip()
+                if not entrada:
+                    continue
+                if entrada.lower() == "q":
+                    break
+                partes = entrada.split(maxsplit=1)
+                cmd = partes[0].lower()
+
+                if cmd == "t" and len(partes) > 1:
+                    enviar_3_bytes_utf8(sock, partes[1])
+                elif cmd == "b" and len(partes) > 1:
+                    valores = partes[1].split()
+                    enviar_bytes(sock, valores)
+                else:
+                    print("  Comando no reconocido. Usa 't <texto>', 'b <n1> <n2> ...' o 'q'.")
+        except KeyboardInterrupt:
+            print("\nInterrumpido por el usuario.")
+
+        parar.set()
+        print("Cerrando conexión...")
+
+    print("Conexión cerrada.")
+
 
 if __name__ == "__main__":
-    print(f"Conectando a {HOST}:{PORT} ...")
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((HOST, PORT))
-        print("Conexion establecida. Opciones:\n - Escribe 3 bytes en hex/dec separados por espacios (ej: 0x80 0x00 0x00 o 128 0 0)\n - Escribe texto libre (se codifica en UTF-8 y se ajusta a 3 bytes)\n - Escribe q para cerrar.\n")
-        while True:
-            entrada = input("Entrada: ").strip()
-            if entrada.lower() == "q":
-                print("Cerrando conexion.")
-                break
-            # intentar interpretar como lista de bytes (hex o decimal)
-            tokens = entrada.split()
-            parsed_as_bytes = False
-            if len(tokens) >= 1:
-                try:
-                    vals = [int(t, 0) for t in tokens]
-                    # si la conversion funciona y hay al menos un valor, enviamos como bytes
-                    if len(vals) >= 1:
-                        enviar_bytes(s, vals)
-                        parsed_as_bytes = True
-                except Exception:
-                    parsed_as_bytes = False
-            if not parsed_as_bytes:
-                try:
-                    enviar_3_bytes_utf8(s, entrada)
-                except Exception as e:
-                    print(f"  Error: {e}")
+    main()

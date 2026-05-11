@@ -7,7 +7,7 @@ import numpy as np
 def procesar_tablero_3x3_azules(
     robot,
     ws_ratio=1.0,
-    hsv_min=(97, 123, 43),
+    hsv_min=(97, 123, 116),
     hsv_max=(156, 255, 246),
     area_min_ratio=0.05,
 ):
@@ -40,7 +40,7 @@ def procesar_tablero_3x3_azules(
         return posiciones_encontradas
 
     print("Zona de trabajo extraída y corregida correctamente.")
-    image_functions.show_img_and_wait_close("prueba", img_workspace)
+    #image_functions.show_img_and_wait_close("prueba", img_workspace)
     mascara_azul = image_functions.threshold_hsv(
         img_workspace, list(hsv_min), list(hsv_max)
     )
