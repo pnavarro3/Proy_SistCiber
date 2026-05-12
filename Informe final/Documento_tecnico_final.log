@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (MiKTeX 26.2) (preloaded format=pdflatex 2026.2.24)  11 MAY 2026 09:33
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (MiKTeX 26.2) (preloaded format=pdflatex 2026.2.24)  12 MAY 2026 09:17
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -877,7 +877,7 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 \tf@toc=\write5
 \openout5 = `Documento_tecnico_final.toc'.
 
- [2]
+ [2] [3]
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <5> on input line 63.
 
@@ -890,60 +890,86 @@ Underfull \hbox (badness 1454) in paragraph at lines 70--70
 []|\T1/lmr/m/n/10 Procedimientos y evi-den-
  []
 
-[3]
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[4] [5] [6]
-Underfull \hbox (badness 1297) in paragraph at lines 231--231
+[4]
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 1
+54.
+ (C:\Users\pnavarro\AppData\Local\Programs\MiKTeX\tex/latex/lm\t1lmtt.fd
+File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
+[5]
+Underfull \hbox (badness 10000) in paragraph at lines 167--167
+[]|\T1/lmr/m/n/10 Salida
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 168--168
+[]|\T1/lmr/m/n/10 Entradas
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 169--169
+[]|\T1/lmr/m/n/10 Salidas
+ []
+
+
+Overfull \hbox (59.80899pt too wide) in paragraph at lines 169--169
+\T1/lmtt/m/n/10 DEC,FTU,FTJ,FIN,RES,tablero| 
+ []
+
+[6] [7{C:/Users/pnavarro/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-ma
+thsy.enc}]
+Underfull \hbox (badness 1297) in paragraph at lines 253--253
 []|\T1/lmr/m/n/10 PC cen-tral $\OMS/lmsy/m/n/10 !$
  []
 
 
-Underfull \hbox (badness 1533) in paragraph at lines 231--232
+Underfull \hbox (badness 1533) in paragraph at lines 253--254
 []|\T1/lmr/m/n/10 Inicio de par-ti-da y se-lec-ción de mo-do de ope-ra-ción
  []
 
 
-Underfull \hbox (badness 1297) in paragraph at lines 232--232
+Underfull \hbox (badness 1297) in paragraph at lines 254--254
 []|\T1/lmr/m/n/10 PC cen-tral $\OMS/lmsy/m/n/10 !$
  []
 
 
-Underfull \hbox (badness 3128) in paragraph at lines 233--233
+Underfull \hbox (badness 3128) in paragraph at lines 255--255
 []|\T1/lmr/m/n/10 Robot $\OMS/lmsy/m/n/10 !$ \T1/lmr/m/n/10 PC
  []
 
 
-Underfull \hbox (badness 3128) in paragraph at lines 234--234
+Underfull \hbox (badness 3128) in paragraph at lines 256--256
 []|\T1/lmr/m/n/10 Robot $\OMS/lmsy/m/n/10 !$ \T1/lmr/m/n/10 PC
  []
 
 
-Underfull \hbox (badness 3128) in paragraph at lines 235--235
+Underfull \hbox (badness 3128) in paragraph at lines 257--257
 []|\T1/lmr/m/n/10 Robot $\OMS/lmsy/m/n/10 !$ \T1/lmr/m/n/10 PC
  []
 
 
-Underfull \hbox (badness 3128) in paragraph at lines 236--236
+Underfull \hbox (badness 3128) in paragraph at lines 258--258
 []|\T1/lmr/m/n/10 Robot $\OMS/lmsy/m/n/10 !$ \T1/lmr/m/n/10 PC
  []
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[7{C:/Users/pnavarro/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-mathsy
-.enc}]
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[8]
-ignored: Infinite glue shrinkage found in box being split [9{C:/Users/pnavarro/AppDat
-a/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-rm.enc}]
-ignored: Infinite glue shrinkage f
-ound in box being split [10] [11] [12]
-ignored: Infinite glue shrinkage found in box bein
-g split [13] [14] (Documento_tecnico_final.aux
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[8] [9] [10{C:/Users/pnavarro/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/
+lm-rm.enc}]
+ignored: Infinite glue shrinkage found in box being split [11] [12] [13]
+ignored: Infin
+ite glue shrinkage found in box being split [14] [15] (Documento_tecnico_final.
+aux
 LaTeX Info: Redefining \. on input line 11.
 LaTeX Info: Redefining \% on input line 11.
 )
@@ -953,25 +979,27 @@ L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `Documento_tecnico_final.out' has not changed
 .
-(rerunfilecheck)             Checksum: C27A010F1B32F9B5FFCA019D31B05790;6470.
+(rerunfilecheck)             Checksum: 7B09FF2BBE0A52C7FC20EC811A42C711;6902.
  ) 
 Here is how much of TeX's memory you used:
- 22906 strings out of 467867
- 436076 string characters out of 5416882
+ 22956 strings out of 467867
+ 436876 string characters out of 5416882
  865632 words of memory out of 5000000
- 51338 multiletter control sequences out of 15000+600000
- 687198 words of font info for 75 fonts, out of 8000000 for 9000
+ 51380 multiletter control sequences out of 15000+600000
+ 687835 words of font info for 77 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 102i,11n,107p,543b,816s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 102i,11n,107p,786b,816s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Users/pnavarro/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmbx10
 .pfb><C:/Users/pnavarro/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmb
 x12.pfb><C:/Users/pnavarro/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/
 lmr10.pfb><C:/Users/pnavarro/AppData/Local/Programs/MiKTeX/fonts/type1/public/l
 m/lmr12.pfb><C:/Users/pnavarro/AppData/Local/Programs/MiKTeX/fonts/type1/public
-/lm/lmsy10.pfb>
-Output written on Documento_tecnico_final.pdf (14 pages, 202264 bytes).
+/lm/lmsy10.pfb><C:/Users/pnavarro/AppData/Local/Programs/MiKTeX/fonts/type1/pub
+lic/lm/lmtt10.pfb><C:/Users/pnavarro/AppData/Local/Programs/MiKTeX/fonts/type1/
+public/lm/lmtt12.pfb>
+Output written on Documento_tecnico_final.pdf (15 pages, 261478 bytes).
 PDF statistics:
- 279 PDF objects out of 1000 (max. 8388607)
- 71 named destinations out of 1000 (max. 500000)
- 229 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 301 PDF objects out of 1000 (max. 8388607)
+ 74 named destinations out of 1000 (max. 500000)
+ 237 words of extra memory for PDF output out of 10000 (max. 10000000)
 
