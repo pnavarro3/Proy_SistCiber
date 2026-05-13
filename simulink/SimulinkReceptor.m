@@ -12,10 +12,12 @@ function [DEC, FTU, FTJ, FIN, RES, tablero] = SimulinkReceptor(data, count, Ts)
 %
 % Salidas:
 %   DEC, FTU, FTJ, FIN: pulsos (1 durante 100ms)
-%   RES: resultado final (1=victoria, 2=derrota, 3=empate)
+%   RES: resultado en texto sin formato fijo
+%        'Jugando' solo al inicio de partida y luego
+%        'victoria', 'derrota' o 'empate' al finalizar
 %   tablero: vector 1x9 double (0=vacío, 1=rival, 2=propio)
 
-persistent rx_buffer dec_cnt ftu_cnt ftj_cnt tablero_mem initialized;
+persistent rx_buffer dec_cnt ftu_cnt ftj_cnt tablero_mem res_mem en_partida initialized;
 coder.varsize('rx_buffer', [1, 2048], [0, 1]);
 
 if isempty(initialized)
@@ -25,6 +27,8 @@ if isempty(initialized)
     ftu_cnt       = 0.0;
     ftj_cnt       = 0.0;
     tablero_mem   = zeros(1, 9);  % 0=vacío, 1=rival, 2=propio
+    res_mem       = "";
+    en_partida    = false;
 end
 
 PULSE_SAMPLES = max(1.0, round(0.1 / Ts));   % 100 ms en muestras
@@ -34,7 +38,7 @@ DEC = 0.0;
 FTU = 0.0;
 FTJ = 0.0;
 FIN = 0.0;
-RES = 0.0;
+RES = res_mem;
 
 % ── Acumular bytes recibidos ──────────────────────────────────
 n = round(double(count));
@@ -107,23 +111,36 @@ for iter = 1:256                        %#ok<FORPF>
 
     elseif strcmp(cmd, 'DEC')
         dec_cnt = PULSE_SAMPLES;
+        if ~en_partida
+            res_mem = "Jugando";
+            en_partida = true;
+        end
 
     elseif strcmp(cmd, 'FTU')
         ftu_cnt = PULSE_SAMPLES;
+        if ~en_partida
+            res_mem = "Jugando";
+            en_partida = true;
+        end
 
     elseif strcmp(cmd, 'FTJ')
         ftj_cnt = PULSE_SAMPLES;
+        if ~en_partida
+            res_mem = "Jugando";
+            en_partida = true;
+        end
 
     elseif strcmp(cmd, 'FIN')
         FIN = 1.0;
-        r   = strtrim(resto);
-        if numel(r) >= 1
-            c1 = upper(r(1));
-            if     c1 == 'V',  RES = 1.0;
-            elseif c1 == 'D',  RES = 2.0;
-            elseif c1 == 'E',  RES = 3.0;
-            end
+        r = upper(strtrim(resto));
+        if strncmp(r, 'VIC', 3)
+            res_mem = "victoria";
+        elseif strncmp(r, 'DER', 3)
+            res_mem = "derrota";
+        elseif strncmp(r, 'EMP', 3)
+            res_mem = "empate";
         end
+        en_partida = false;
     end
 end
 
@@ -144,5 +161,6 @@ if ftj_cnt > 0
 end
 
 % ── Asignar salidas
+RES = res_mem;
 tablero = tablero_mem;
 end

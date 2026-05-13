@@ -2,15 +2,13 @@ import socket
 import time
 import random
 import threading
-from pathlib import Path
+import msvcrt
 from pyniryo import NiryoRobot, PinID, PinState
 from VisionRobot import procesar_tablero_3x3_azules
 from Ned2_ULL import backup_robot_pose, restore_robot_pose
 
-BACKUP_FILE = Path(__file__).resolve().parent.parent / "config" / "posbackup.json"
-
 # ─── Configuración TCP/IP ─────────────────────────────────────
-HOST = "10.209.2.130"
+HOST = "10.209.2.125"
 PORT = 5000
 
 HOST2 = "10.209.2.72"
@@ -33,12 +31,14 @@ MAX_TURNOS = 30
 def enviar_mensaje(sock: socket.socket, mensaje: str) -> None:
     data = (mensaje + "\n").encode("utf-8")
     sock.sendall(data)
-    hex_str = " ".join(f"0x{b:02X}" for b in data)
-    print(f"[TX] '{mensaje}' | HEX: {hex_str}")
+    print(f"[TX] '{mensaje}'")
 
 
 def recibir_mensaje(sock: socket.socket) -> str:
-    data = sock.recv(1024)
+    try:
+        data = sock.recv(1024)
+    except socket.timeout:
+        return None
     if not data:
         print("[RX] Conexión cerrada.")
         return ""
@@ -54,11 +54,29 @@ def escuchar_sock2(sock2):
     while True:
         try:
             msg = recibir_mensaje(sock2)
+            if msg is None:
+                continue
             if not msg:
                 break
             print(f"[SOCK2 RX] {msg.strip()}")
         except:
             break
+
+
+def esc_pulsado():
+    if not msvcrt.kbhit():
+        return False
+
+    tecla = msvcrt.getch()
+    if tecla in (b'\x00', b'\xe0') and msvcrt.kbhit():
+        msvcrt.getch()
+        return False
+
+    if tecla == b'\x1b':
+        print("[SYS] ESC pulsado. Finalizando...")
+        return True
+
+    return False
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -86,31 +104,22 @@ def mover_ficha(robot, origen, destino):
     robot.clear_collision_detected()
 
     robot.move(robot.get_pose_saved(aprox_orig))
-    time.sleep(1)
 
     robot.move(robot.get_pose_saved(pose_orig))
-    time.sleep(1)
 
     robot.grasp_with_tool()
-    time.sleep(0.5)
 
     robot.move(robot.get_pose_saved(aprox_orig))
-    time.sleep(1)
 
     robot.move(robot.get_pose_saved(aprox_dest))
-    time.sleep(1)
 
     robot.move(robot.get_pose_saved(pose_dest))
-    time.sleep(1)
 
     robot.release_with_tool()
-    time.sleep(0.5)
 
     robot.move(robot.get_pose_saved(aprox_dest))
-    time.sleep(1)
 
     robot.move(robot.get_pose_saved("vista_gen"))
-    time.sleep(1)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -143,15 +152,35 @@ def construir_act(fichas_propias, fichas_rival):
 def decidir_jugada(fichas_propias, fichas_rival):
     libres = casillas_libres(fichas_propias, fichas_rival)
 
+    movimientos = []
     if len(fichas_propias) < 3:
-        origen = f"alm{len(fichas_propias)+1}"
-        if len(fichas_propias) == 0 and 5 in libres:
-            return origen, "5"
-        return origen, str(random.choice(libres))
+        origen_alm = f"alm{len(fichas_propias)+1}"
+        for libre in libres:
+            movimientos.append((origen_alm, str(libre)))
+    else:
+        for origen in fichas_propias:
+            for libre in libres:
+                movimientos.append((str(origen), str(libre)))
 
-    origen = str(random.choice(fichas_propias))
-    destino = str(random.choice(libres))
-    return origen, destino
+    # Regla principal: si existe jugada ganadora inmediata, tomarla siempre.
+    for origen, destino in movimientos:
+        if origen.startswith("alm"):
+            nuevas_propias = list(fichas_propias)
+            nuevas_propias.append(int(destino))
+        else:
+            nuevas_propias = [int(destino) if p == int(origen) else p for p in fichas_propias]
+
+        if verificar_victoria(nuevas_propias):
+            return origen, destino
+
+    if not movimientos:
+        return None, None
+
+    if len(fichas_propias) < 3:
+        if len(fichas_propias) == 0 and 5 in libres:
+            return f"alm{len(fichas_propias)+1}", "5"
+
+    return random.choice(movimientos)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -160,10 +189,14 @@ def decidir_jugada(fichas_propias, fichas_rival):
 
 def esperar_turno_rival(robot):
     while True:
+        if esc_pulsado():
+            return False
         if robot.digital_read("DI1") == PinState.HIGH:
             while robot.digital_read("DI1") == PinState.HIGH:
+                if esc_pulsado():
+                    return False
                 time.sleep(0.05)
-            return
+            return True
         time.sleep(0.01)
 
 
@@ -176,48 +209,108 @@ def detectar_fichas_rival(robot):
 # ═══════════════════════════════════════════════════════════════
 
 def partida(robot, sock, sock2=None):
-    print("Esperando INI...")
-    modo = None
-
-    while modo is None:
-        msg = recibir_mensaje(sock)
-        partes = msg.split()
-        if len(partes) >= 2 and partes[0] == "INI":
-            modo = partes[1].upper()
-
-    fichas_propias = []
-    fichas_rival = []
-    almacen = ["alm1", "alm2", "alm3"]
-
     while True:
-        if modo == "AUT":
-            origen, destino = decidir_jugada(fichas_propias, fichas_rival)
-            enviar_mensaje(sock, "DEC")
+        if esc_pulsado():
+            return
+        print("Esperando INI...")
+        modo = None
 
-        else:
+        while modo is None:
+            if esc_pulsado():
+                return
             msg = recibir_mensaje(sock)
+            if msg is None:
+                continue
+            if not msg:
+                return
             partes = msg.split()
-            origen, destino = partes[1], partes[2]
+            if len(partes) >= 2 and partes[0].upper() == "INI":
+                modo = partes[1].upper()
+                print(f"Partida iniciada en modo {modo}")
+                robot.say("Partida iniciada", 3)
 
-        mover_ficha(robot, origen, destino)
+        fichas_propias = []
+        fichas_rival = []
+        almacen = ["alm1", "alm2", "alm3"]
+        turnos = 0
 
-        if sock2:
-            enviar_mensaje(sock2, f"MOV {origen} {destino}")
+        while True:
+            if esc_pulsado():
+                return
+            if modo == "AUT":
+                origen, destino = decidir_jugada(fichas_propias, fichas_rival)
+                if origen is None:
+                    enviar_mensaje(sock, "FIN EMP")
+                    robot.say("Empate", 3)
+                    break
+                enviar_mensaje(sock, "DEC")
 
-        enviar_mensaje(sock, "FTJ")
+            else:
+                msg = recibir_mensaje(sock)
+                if msg is None:
+                    continue
+                if not msg:
+                    return
+                partes = msg.split()
+                if len(partes) < 3 or partes[0].upper() != "MOV":
+                    continue
+                origen, destino = partes[1], partes[2]
 
-        if origen.startswith("alm"):
-            almacen.remove(origen)
-            fichas_propias.append(int(destino))
-        else:
-            fichas_propias.remove(int(origen))
-            fichas_propias.append(int(destino))
+            mover_ficha(robot, origen, destino)
 
-        esperar_turno_rival(robot)
-        fichas_rival = detectar_fichas_rival(robot)
+            if sock2:
+                enviar_mensaje(sock2, f"MOV {origen} {destino}")
 
-        enviar_mensaje(sock, construir_act(fichas_propias, fichas_rival))
-        enviar_mensaje(sock, "FTU")
+            enviar_mensaje(sock, "FTJ")
+            robot.say("Te toca", 3)
+
+            if origen.startswith("alm"):
+                if origen in almacen:
+                    almacen.remove(origen)
+                fichas_propias.append(int(destino))
+            else:
+                fichas_propias.remove(int(origen))
+                fichas_propias.append(int(destino))
+
+            # ACT tras el turno del robot
+            enviar_mensaje(sock, construir_act(fichas_propias, fichas_rival))
+
+            if verificar_victoria(fichas_propias):
+                enviar_mensaje(sock, "FIN VIC")
+                robot.say("He ganado", 3)
+                break
+
+            if not casillas_libres(fichas_propias, fichas_rival):
+                enviar_mensaje(sock, "FIN EMP")
+                robot.say("Empate", 3)
+                break
+
+            if not esperar_turno_rival(robot):
+                return
+            fichas_rival = detectar_fichas_rival(robot)
+
+            enviar_mensaje(sock, "FTU")
+            # ACT al finalizar el turno del rival
+            enviar_mensaje(sock, construir_act(fichas_propias, fichas_rival))
+
+            if verificar_victoria(fichas_rival):
+                enviar_mensaje(sock, "FIN DER")
+                robot.say("Has ganado", 3)
+                break
+
+            if not casillas_libres(fichas_propias, fichas_rival):
+                enviar_mensaje(sock, "FIN EMP")
+                robot.say("Empate", 3)
+                break
+
+            turnos += 1
+            if turnos >= MAX_TURNOS:
+                enviar_mensaje(sock, "FIN EMP")
+                robot.say("Empate", 3)
+                break
+
+        robot.move_to_home_pose()
+        print("Partida finalizada. Esperando nueva orden INI...")
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -230,17 +323,19 @@ def main():
     robot.update_tool()
     robot.set_arm_max_velocity(50)
 
-    restore_robot_pose(robot, BACKUP_FILE)
-    robot.move(robot.get_pose_saved("vista_gen"))
+    restore_robot_pose(robot, "posbackup.json")
+    robot.move_to_home_pose()
 
     # conexión principal
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(0.2)
     sock.connect((HOST, PORT))
     print("Conectado a servidor principal")
 
     # segunda conexión
     sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
+        sock2.settimeout(0.2)
         sock2.connect((HOST2, PORT2))
         print("Conectado a servidor secundario")
 
@@ -258,7 +353,7 @@ def main():
         sock.close()
         if sock2:
             sock2.close()
-        backup_robot_pose(robot, BACKUP_FILE)
+        backup_robot_pose(robot, "posbackup.json")
         robot.close_connection()
 
 
