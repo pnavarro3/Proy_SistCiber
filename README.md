@@ -1,124 +1,104 @@
-# Proyecto: Sistema Ciberfísico de 3 en Raya con Robot Ned-2
+# Sistema Ciberfísico 3 en Raya con Ned-2
 
-Proyecto desarrollado en la Universidad de La Laguna (ULL) para un sistema ciberfísico completo que integra visión, IA y robótica con el robot colaborativo Ned-2.
+Proyecto académico de Sistemas Ciberfísicos (ULL, curso 2025/26) para implementar y validar una partida de 3 en raya con robot Ned-2, visión artificial y supervisión remota desde un PC central.
 
-## Estructura del Proyecto
+## Resumen
 
-```
+El sistema se compone de dos nodos:
+
+- PC central (Matlab/Simulink): supervisa estados, envía comandos de juego y muestra la evolución de la partida.
+- PC del robot (Python): controla Ned-2, gestiona comunicación TCP/IP, procesa visión y ejecuta jugadas.
+
+Incluye dos modos de operación:
+
+- Manual: el operador decide el movimiento desde el PC central.
+- Automático: el robot calcula su jugada mediante una heurística de victoria inmediata y elección de casilla libre.
+
+## Estructura del repositorio
+
 .
-├── src/                           # Código fuente Python
-│   ├── ComRobot.py               # Comunicación y control del robot
-│   ├── VisionRobot.py            # Procesamiento de visión y detección del tablero
-│   ├── Ned2_ULL.py               # Utilidades y calibración HSV del Ned-2
-│   ├── ManejoRobot.py            # Gestión de movimientos y poses
-│   ├── Calibracion.py            # Calibración del sistema
-│   └── PruebaComTCPIP.py         # Pruebas de comunicación TCP/IP
-│
-├── simulink/                      # Sistemas de control en Simulink/Matlab
-│   ├── SimulinkEmisor.m          # Interfaz emisora (PC central → Ned-2)
-│   └── SimulinkReceptor.m        # Interfaz receptora (Ned-2 → PC central)
-│
-├── docs/                          # Documentación técnica
-│   ├── Documento_tecnico_final.tex  # Informe técnico en LaTeX
-│   ├── Documento_tecnico_final.pdf  # PDF compilado del informe
-│   └── (archivos auxiliares LaTeX)
-│
-├── config/                        # Archivos de configuración
-│   └── posbackup.json            # Backup de poses del robot
-│
-├── context/                       # Documentos de referencia del proyecto
-│   ├── Documento_técnico.txt
-│   ├── Documento_tecnico2.txt
-│   ├── EnunciadoProyecto (1).txt
-│   └── Requisitos 2 (1).txt
-│
-└── .gitignore                     # Configuración de Git
+|- src/
+|  |- ComRobot.py
+|  |- Ned2_ULL.py
+|  |- VisionRobot.py
+|  |- Calibracion.py
+|  |- ManejoRobot.py
+|  |- PruebaComTCPIP.py
+|  |- pruebaRuben.py
+|- simulink/
+|  |- SimulinkEmisor.m
+|  |- SimulinkReceptor.m
+|  |- InterpretarTablero.m
+|  |- MensajeTurno.m
+|- config/
+|  |- posbackup.json
+|- docs/
+|  |- Documento_tecnico_final.tex
+|  |- Documento_tecnico_final.pdf
+|- context/
+|- capturas/
+|- .gitignore
+|- README.md
 
-```
+## Componentes principales
 
-## Descripción de Componentes
+### Python (PC robot)
 
-### src/ - Código Fuente
+- ComRobot.py: bucle principal de partida, sockets, lógica de turnos y movimiento pick-and-place.
+- Ned2_ULL.py: utilidades de poses del robot, backup/restore y calibración HSV.
+- VisionRobot.py: detección del tablero y extracción de casillas ocupadas desde la cámara del robot.
 
-- **ComRobot.py**: Núcleo de comunicación TCP/IP y control del robot. Implementa el protocolo basado en mensajes ASCII (INI, MOV, DEC, ACT, FTJ, FTU, FIN).
-- **VisionRobot.py**: Sistema de visión. Procesa imágenes de la cámara RGB del robot, realiza segmentación HSV y corrección de perspectiva.
-- **Ned2_ULL.py**: Utilidades específicas del Ned-2, incluyendo calibración HSV y funciones de API pyniryo.
-- **ManejoRobot.py**: Gestión de movimientos, poses (almacén, aproximación, espera), límites de velocidad.
-- **Calibracion.py**: Rutinas de calibración del sistema.
-- **PruebaComTCPIP.py**: Suite de pruebas para validar la comunicación TCP/IP.
+### Simulink/Matlab (PC central)
 
-### simulink/ - Control en Simulink
+- SimulinkEmisor.m: formatea tramas de salida hacia el robot en buffer fijo (uint8 1x32).
+- SimulinkReceptor.m: parsea mensajes de entrada, genera pulsos de evento y estado de tablero.
+- InterpretarTablero.m: separa el vector 1x9 para uso en lógica/interfaz.
+- MensajeTurno.m: mensaje de estado de turno para supervisión.
 
-- **SimulinkEmisor.m**: Máquina de estados y emisor desde PC central al robot.
-- **SimulinkReceptor.m**: Receptor e integración de mensajes en el sistema.
+## Protocolo de comunicación
 
-### docs/ - Documentación
+Mensajes de texto finalizados en salto de línea:
 
-El informe técnico final consolida todo el trabajo:
-- Arquitectura del sistema (PC central + PC del robot)
-- Descripción técnica completa con tablas y figuras
-- Validación de requisitos
-- Guía de puesta en marcha
+- PC central -> robot: INI MAN, INI AUT, INI COM, MOV origen destino.
+- Robot -> PC central: DEC, ACT, FTJ, FTU, FIN VIC/DER/EMP.
 
-### config/ - Configuración
-
-- **posbackup.json**: Almacenamiento persistente de poses y configuración del robot.
-
-### context/ - Referencias
-
-Documentos originales del proyecto:
-- Enunciado del proyecto
-- Documento técnico previos
-- Especificación de requisitos
-
-## Tecnologías
-
-- **Lenguaje**: Python 3.x, Matlab/Simulink
-- **Robot**: Ned-2 (6 DoF, cámara RGB, pinza integrada)
-- **Control**: pyniryo API
-- **Comunicación**: TCP/IP (puerto configurable)
-- **Visión**: OpenCV, procesamiento HSV
-- **IA**: Algoritmo Minimax para decisiones automáticas
-- **Documentación**: LaTeX
-
-## Comunicación TCP/IP
-
-El protocolo usa mensajes de texto ASCII terminados en `\n`:
-- **INI**: Inicialización y reset
-- **MOV**: Movimiento del robot a coordenadas
-- **DEC**: Decisión (modo IA)
-- **ACT**: Acción de la pinza
-- **FTJ**: Feedback del jugador
-- **FTU**: Feedback del usuario
-- **FIN**: Fin de partida
-
-## Requisitos del Sistema
+## Requisitos técnicos
 
 ### Hardware
-- PC Central (Simulink, estrategia, coordinación)
-- PC Ned-2 (visión, movimiento, pinza)
-- Robot Ned-2 con cámara RGB
-- Red Ethernet entre PCs
+
+- Robot Ned-2 con pinza y cámara operativa.
+- PC central para Simulink.
+- PC de control del robot.
+- Red del laboratorio (router + wifi) para ambos equipos.
 
 ### Software
-- Python 3.8+
-- Matlab/Simulink (para control)
-- pyniryo
-- OpenCV
-- NumPy, SciPy
 
-## Instalación y Puesta en Marcha
+- Python 3.8 o superior.
+- Matlab/Simulink.
+- pyniryo.
+- opencv-python.
+- numpy.
 
-Ver `docs/Documento_tecnico_final.pdf` para instrucciones detalladas.
+## Puesta en marcha rápida
 
-## Validación
+1. Conectar router del laboratorio y ambos PCs a la red wifi de trabajo.
+2. Revisar IPs y configurar la IP del PC robot tanto en Simulink como en ComRobot.py.
+3. Encender y calibrar el Ned-2.
+4. Calibrar HSV de cámara para detección de tablero.
+5. Cargar poses/configuracion del robot.
+6. Iniciar script de control en el PC robot.
+7. Abrir modelo de Simulink en PC central y arrancar comunicación.
+8. Seleccionar modo y pulsar Start.
 
-El proyecto cumple con todos los requisitos especificados en `context/Requisitos 2 (1).txt`. Ver informe técnico final para matriz de trazabilidad.
+## Documentación
 
-## Licencia
+- Informe editable en docs/Documento_tecnico_final.tex.
+- Informe compilado en docs/Documento_tecnico_final.pdf.
 
-Proyecto académico - Universidad de La Laguna
+## Política de versionado
 
-## Contacto
+El repositorio utiliza reglas en .gitignore para no subir carpetas de apoyo y limitar archivos rastreados en algunas rutas.
 
-Para consultas sobre este proyecto, consulta los documentos técnicos incluidos.
+## Estado del proyecto
+
+Sistema funcional en manual y automático, con validaciones de comunicación, seguridad de movimiento, visión y tiempos de ciclo recogidas en el documento técnico final.

@@ -1,0 +1,16 @@
+# Excluir carpeta de capturas
+capturas/
+
+# Excluir carpeta de contexto
+context/
+
+# En docs: subir archivos .tex y .pdf
+docs/*
+!docs/*.tex
+!docs/*.pdf
+
+# En src: subir solo archivos principales de control
+src/*
+!src/ComRobot.py
+!src/Ned2_ULL.py
+!src/VisionRobot.py
