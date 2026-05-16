@@ -100,20 +100,9 @@
 \centering
 
 % Franja superior
-{\color{ullblue}\rule{\linewidth}{1.5pt}}\\[0.4cm]
-{\large\scshape Universidad de La Laguna}\\[0.15cm]
-{\normalsize Escuela Superior de Ingeniería y Tecnología}\\[0.15cm]
-{\normalsize Grado en Ingeniería Electrónica Industrial y Automática}\\[0.3cm]
-{\color{ullblue}\rule{\linewidth}{0.6pt}}
 
 \vspace{2cm}
 
-% Asignatura
-{\large Sistemas Ciberfísicos\quad|\quad Curso 2025/26}
-
-\vspace{2cm}
-
-% Título principal
 {\color{ullblue}\rule{0.6\linewidth}{0.4pt}}\\[0.6cm]
 {\LARGE\bfseries Documento Técnico Final}\\[0.5cm]
 {\Large Sistema ciberfísico:\\[0.2cm] 3 en raya con Ned-2}\\[0.6cm]
@@ -134,6 +123,7 @@
 \end{titlepage}
 
 \thispagestyle{empty}
+\setcounter{tocdepth}{2}
 \tableofcontents
 \newpage
 
@@ -204,7 +194,7 @@ El ciclo operativo comienza con la selección de modo y la verificación de prec
 
 % Vision -> PC robot (ruta lateral para no cruzar etiquetas)
 \draw[arrow] (vis.north) |- (0,-2.55) -- (8.4,-2.55) -| (pcr.south);
-\node[lab] at (4.2,-3.65) {Estado visual};
+\node[lab] at (4.2,-2.35) {Estado visual};
 \end{tikzpicture}
 \caption{Gráfica de arquitectura funcional y flujo de información del sistema.}
 \end{figure}
@@ -568,8 +558,8 @@ else:
 
 \begin{figure}[H]
 \centering
-\IfFileExists{capturas/rq028.png}{
-  \includegraphics[width=0.95\textwidth]{capturas/rq028.png}
+\IfFileExists{../capturas/rq028.png}{
+  \includegraphics[width=0.95\textwidth]{../capturas/rq028.png}
 }{
   \fbox{\parbox{0.92\textwidth}{\centering Captura pendiente: guardar la imagen de RqId 000C-028 en \texttt{capturas/rq028.png}.}}
 }
@@ -585,8 +575,8 @@ else:
 
 \begin{figure}[H]
 \centering
-\IfFileExists{capturas/rq029.png}{
-  \includegraphics[width=0.95\textwidth]{capturas/rq029.png}
+\IfFileExists{../capturas/rq029.png}{
+  \includegraphics[width=0.95\textwidth]{../capturas/rq029.png}
 }{
   \fbox{\parbox{0.92\textwidth}{\centering Captura pendiente: guardar la imagen de RqId 000C-029 en \texttt{capturas/rq029.png}.}}
 }
@@ -668,8 +658,9 @@ En validación, las evidencias recopiladas muestran cumplimiento de los requisit
 
 Como limitaciones actuales, el modo de competición robot vs robot queda condicionado a validación presencial específica y la selección del jugador inicial no se ha priorizado en la implementación final. Estos puntos no comprometen el funcionamiento del escenario objetivo principal (robot vs humano), pero se identifican como líneas de cierre recomendadas para una versión posterior.
 
-Como trabajo futuro, se propone: (i) completar la validación formal del modo competición en campo con dos robots, (ii) incorporar selección explícita de jugador inicial en la máquina de estados, (iii) automatizar registro de logs y evidencias de prueba para auditoría de requisitos, y (iv) reforzar la calibración asistida de visión para mejorar repetibilidad ante cambios de iluminación. Con ello, el sistema quedaría preparado para una explotación docente más robusta y para su extensión a escenarios de interacción multi-robot.
+Como trabajo futuro, se propone: (i) completar la validación formal del modo competición en campo con dos robots, (ii) incorporar selección explícita de jugador inicial en la máquina de estados y (iii) reforzar la calibración asistida de visión para mejorar repetibilidad ante cambios de iluminación.
 
+\newpage
 \appendix
 \section{Anexo A: Contenido del repositorio}
 
@@ -683,11 +674,11 @@ Proy_SistCiber/
 +-- .gitignore
 +-- config/
 |   +-- posbackup.json
-+-- context/
 +-- docs/
 |   +-- Documento_tecnico_final.tex
-+-- capturas/
+|   +-- Documento_tecnico_final.pdf
 +-- simulink/
+|   +-- ProyectoSC.slx
 |   +-- SimulinkEmisor.m
 |   +-- SimulinkReceptor.m
 |   +-- InterpretarTablero.m
@@ -697,9 +688,6 @@ Proy_SistCiber/
     +-- Ned2_ULL.py
     +-- VisionRobot.py
     +-- Calibracion.py
-    +-- ManejoRobot.py
-    +-- PruebaComTCPIP.py
-    +-- pruebaRuben.py
 \end{verbatim}
 
 \subsection{Descripción por carpetas}
@@ -707,17 +695,15 @@ Proy_SistCiber/
 \begin{table}[H]
 \centering
 \footnotesize
-\begin{tabular}{P{0.22\textwidth} P{0.70\textwidth}}
+\begin{tabular}{P{0.18\textwidth} P{0.74\textwidth}}
 \toprule
 \textbf{Ruta} & \textbf{Contenido y propósito} \\
 \midrule
 \texttt{src/} & Código Python del PC del robot: control de partida, comunicaciones TCP/IP, movimiento del Ned-2 y visión artificial. \\
-\texttt{simulink/} & Funciones MATLAB/Simulink del PC central para emisión/recepción de mensajes, interpretación del tablero y supervisión de turno. \\
-\texttt{docs/} & Documentación técnica del proyecto en LaTeX (memoria final). \\
+\texttt{simulink/} & Modelo principal \texttt{ProyectoSC.slx} y funciones MATLAB/Simulink para emisión/recepción de mensajes e interpretación de tablero. \\
+\texttt{docs/} & Documento técnico final de entrega: fuente LaTeX (\texttt{.tex}) y versión compilada (\texttt{.pdf}). \\
 \texttt{config/} & Ficheros de configuración persistente del robot, en particular copia de seguridad de poses. \\
-\texttt{capturas/} & Evidencias gráficas de validación (capturas de terminal, interfaz y pruebas). \\
-\texttt{context/} & Material de referencia de trabajo (enunciado, documentos previos y notas de requisitos). \\
-\toprule
+\bottomrule
 \end{tabular}
 \caption{Resumen funcional de carpetas del repositorio.}
 \end{table}
@@ -727,25 +713,24 @@ Proy_SistCiber/
 \begin{table}[H]
 \centering
 \footnotesize
-\begin{tabular}{P{0.27\textwidth} P{0.15\textwidth} P{0.50\textwidth}}
+\begin{tabular}{P{0.34\textwidth} P{0.12\textwidth} P{0.44\textwidth}}
 \toprule
 \textbf{Archivo} & \textbf{Tipo} & \textbf{Rol en el sistema} \\
 \midrule
 \texttt{src/ComRobot.py} & Python & Bucle principal de juego en el robot, comunicación con PC central, ejecución de jugadas y mensajes de estado. \\
 \texttt{src/Ned2\_ULL.py} & Python & Utilidades de soporte del Ned-2 (poses, backup/restore y calibración HSV). \\
 \texttt{src/VisionRobot.py} & Python & Detección visual del tablero y extracción de ocupación de casillas. \\
-\texttt{simulink/SimulinkEmisor.m} & MATLAB & Construcción de tramas de comando \texttt{INI}/\texttt{MOV} para transmisión TCP/IP. \\
-\texttt{simulink/SimulinkReceptor.m} & MATLAB & Decodificación de mensajes \texttt{DEC}/\texttt{ACT}/\texttt{FTU}/\texttt{FTJ}/\texttt{FIN} y generación de señales de control. \\
-\texttt{docs/Documento\_tecnico\_final.tex} & LaTeX & Documento técnico final con arquitectura, validación y puesta en marcha. \\
-\texttt{config/posbackup.json} & JSON & Persistencia de poses de referencia del robot para restauración de configuración. \\
-\toprule
+\texttt{src/Calibracion.py} & Python & Ajuste y calibración visual del sistema en entorno de desarrollo. \\
+\texttt{simulink/SimulinkEmisor.m} & MATLAB & Construcción de tramas \texttt{INI}/\texttt{MOV} para transmisión TCP/IP. \\
+\texttt{simulink/SimulinkReceptor.m} & MATLAB & Decodificación de mensajes \texttt{DEC}/\texttt{ACT}/\texttt{FTU}/\texttt{FTJ}/\texttt{FIN} y señales de control. \\
+\texttt{simulink/ProyectoSC.slx} & Simulink & Modelo principal de supervisión y control en el PC central. \\
+\texttt{docs/}\allowbreak\texttt{Documento\_tecnico\_final.tex} & LaTeX & Fuente del documento técnico final. \\
+\texttt{docs/}\allowbreak\texttt{Documento\_tecnico\_final.pdf} & PDF & Versión compilada para entrega y revisión. \\
+\texttt{config/posbackup.json} & JSON & Persistencia de poses de referencia del robot. \\
+\bottomrule
 \end{tabular}
 \caption{Archivos principales para ejecución y mantenimiento.}
 \end{table}
-
-\subsection{Nota de versionado}
-
-El repositorio emplea reglas de exclusión mediante \texttt{.gitignore} para evitar subir material auxiliar no necesario en la entrega (por ejemplo capturas o contexto de trabajo) y mantener bajo control de versiones únicamente los artefactos de código y documentación requeridos.
 
 \subsection{Acceso al repositorio}
 

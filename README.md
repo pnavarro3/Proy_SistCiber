@@ -14,31 +14,27 @@ Incluye dos modos de operación:
 - Manual: el operador decide el movimiento desde el PC central.
 - Automático: el robot calcula su jugada mediante una heurística de victoria inmediata y elección de casilla libre.
 
-## Estructura del repositorio
+## Estructura del repositorio (actual)
 
 .
-|- src/
-|  |- ComRobot.py
-|  |- Ned2_ULL.py
-|  |- VisionRobot.py
-|  |- Calibracion.py
-|  |- ManejoRobot.py
-|  |- PruebaComTCPIP.py
-|  |- pruebaRuben.py
-|- simulink/
-|  |- SimulinkEmisor.m
-|  |- SimulinkReceptor.m
-|  |- InterpretarTablero.m
-|  |- MensajeTurno.m
+|- .gitignore
+|- README.md
 |- config/
 |  |- posbackup.json
 |- docs/
 |  |- Documento_tecnico_final.tex
 |  |- Documento_tecnico_final.pdf
-|- context/
-|- capturas/
-|- .gitignore
-|- README.md
+|- simulink/
+|  |- ProyectoSC.slx
+|  |- SimulinkEmisor.m
+|  |- SimulinkReceptor.m
+|  |- InterpretarTablero.m
+|  |- MensajeTurno.m
+|- src/
+	|- Calibracion.py
+	|- ComRobot.py
+	|- Ned2_ULL.py
+	|- VisionRobot.py
 
 ## Componentes principales
 
@@ -47,6 +43,7 @@ Incluye dos modos de operación:
 - ComRobot.py: bucle principal de partida, sockets, lógica de turnos y movimiento pick-and-place.
 - Ned2_ULL.py: utilidades de poses del robot, backup/restore y calibración HSV.
 - VisionRobot.py: detección del tablero y extracción de casillas ocupadas desde la cámara del robot.
+- Calibracion.py: script de apoyo para ajuste/calibración visual en entorno de desarrollo.
 
 ### Simulink/Matlab (PC central)
 
@@ -54,6 +51,7 @@ Incluye dos modos de operación:
 - SimulinkReceptor.m: parsea mensajes de entrada, genera pulsos de evento y estado de tablero.
 - InterpretarTablero.m: separa el vector 1x9 para uso en lógica/interfaz.
 - MensajeTurno.m: mensaje de estado de turno para supervisión.
+- ProyectoSC.slx: modelo principal de control y supervisión en Simulink.
 
 ## Protocolo de comunicación
 
@@ -97,7 +95,7 @@ Mensajes de texto finalizados en salto de línea:
 
 ## Política de versionado
 
-El repositorio utiliza reglas en .gitignore para no subir carpetas de apoyo y limitar archivos rastreados en algunas rutas.
+El repositorio utiliza reglas en .gitignore para no subir la carpeta context, no subir la carpeta capturas y mantener en docs solo el .tex y el .pdf. En src se mantienen los archivos principales de operación (ComRobot.py, Ned2_ULL.py, VisionRobot.py) y Calibracion.py como apoyo de puesta en marcha.
 
 ## Estado del proyecto
 
